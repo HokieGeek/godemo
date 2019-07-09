@@ -12,6 +12,16 @@ import (
 )
 
 func main() {
+	fmt.Println("[RM Servers]")
+	for _, s := range demo.DetectRMServers() {
+		fmt.Println(s.Host)
+	}
+
+	fmt.Println("[IQ Servers]")
+	for _, s := range demo.DetectIQServers() {
+		fmt.Println(s.Host)
+	}
+
 	// Print all repositories in RM on localhost:8081
 	fmt.Println("[RM Repos]")
 	repos, _ := demo.Repos()
