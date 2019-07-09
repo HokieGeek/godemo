@@ -18,6 +18,10 @@ func IQp() (*privateiq.IQ, error) {
 	return privateiq.New("http://localhost:8070", "admin", "admin123")
 }
 
+func IQ2p(iq *nexusiq.IQ) (*privateiq.IQ, error) {
+	return privateiq.FromPublic(iq)
+}
+
 func Repos() ([]nexusrm.Repository, error) {
 	rm, _ := RM()
 	return nexusrm.GetRepositories(rm)
