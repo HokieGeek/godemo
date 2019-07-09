@@ -7,22 +7,23 @@ An example program:
 package main
 
 import (
-	"fmt"
-
 	"demo"
+	"fmt"
 )
 
 func main() {
-    // Print all repositories in RM on localhost:8081
+	// Print all repositories in RM on localhost:8081
+	fmt.Println("[RM Repos]")
 	repos, _ := demo.Repos()
-	fmt.Printf("%v\n", repos)
+	for _, repo := range repos {
+		fmt.Printf("%s (%s : %s)\n", repo.Name, repo.Format, repo.Type)
+	}
 
-    // Print all applications in IQ on localhost:8070
+	// Print all applications in IQ on localhost:8070
+	fmt.Println("[IQ Apps]")
 	apps, _ := demo.Apps()
-	fmt.Printf("%v\n", apps)
-
-	// Create a new organization in IQ on localhost:8070
-	iq, _ := demo.IQ()
-	iq.CreateOrganization("foobar")
+	for _, app := range apps {
+		fmt.Println(app.Name)
+	}
 }
 ```
