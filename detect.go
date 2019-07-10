@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	// "github.com/hokiegeek/gonexus"
-	// privateiq "github.com/hokiegeek/gonexus-private/iq"
+	// "github.com/hokiegeek/gonexus-private/iq"
 	"github.com/hokiegeek/gonexus/iq"
 	"github.com/hokiegeek/gonexus/rm"
 )
@@ -21,6 +21,7 @@ func portInUse(p int) bool {
 	return err != nil
 }
 
+// DetectRMServers returns all instances of Repository Manager detected on the local machine
 func DetectRMServers() (servers []*nexusrm.RM) {
 	host := "http://localhost"
 
@@ -45,6 +46,7 @@ func DetectRMServers() (servers []*nexusrm.RM) {
 	return
 }
 
+// DetectIQServers returns all instances of IQ detected on the local machine
 func DetectIQServers() (servers []*nexusiq.IQ) {
 	host := "http://localhost"
 

@@ -12,11 +12,13 @@ import (
 )
 
 func main() {
+	// Identify all Repository Manager servers on the local machine
 	fmt.Println("[RM Servers]")
 	for _, s := range demo.DetectRMServers() {
 		fmt.Println(s.Host)
 	}
 
+	// Identify all IQ Servers on the local machine
 	fmt.Println("[IQ Servers]")
 	for _, s := range demo.DetectIQServers() {
 		fmt.Println(s.Host)
