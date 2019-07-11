@@ -7,11 +7,45 @@ import (
 	"strconv"
 	"strings"
 
-	// "github.com/hokiegeek/gonexus"
+	"github.com/hokiegeek/gonexus"
 	// "github.com/hokiegeek/gonexus-private/iq"
 	"github.com/hokiegeek/gonexus/iq"
 	"github.com/hokiegeek/gonexus/rm"
 )
+
+// DetectedRM provides a helper for a found RM instance
+type DetectedRM struct {
+	nexus.ServerInfo
+}
+
+// Client returns a client of this RM instance
+func (d DetectedRM) Client() (rm nexusrm.RM) {
+	// TODO: ask for user and password
+	rm, _ = nexusrm.New(d.Host, d.Username, d.Password)
+	return
+}
+
+// DetectedIQ provides a helper for a found ÍQ instance
+type DetectedIQ struct {
+	nexus.ServerInfo
+}
+
+// Client returns a client of this IQ instance
+func (d DetectedIQ) Client() (iq nexusiq.IQ) {
+	// TODO: ask for user and password
+	iq, _ = nexusiq.New(d.Host, d.Username, d.Password)
+	return
+}
+
+func newDetectedRM(host string) (rm DetectedRM) {
+	rm.Host = host
+	return
+}
+
+func newDetectedIQ(host string) (iq DetectedIQ) {
+	iq.Host = host
+	return
+}
 
 func portInUse(p int) bool {
 	l, err := net.Listen("tcp", ":"+strconv.Itoa(p))
@@ -22,7 +56,7 @@ func portInUse(p int) bool {
 }
 
 // DetectRMServers returns all instances of Repository Manager detected on the local machine
-func DetectRMServers() (servers []*nexusrm.RM) {
+func DetectRMServers() (servers []DetectedRM) {
 	host := "http://localhost"
 
 	isRM := func(resp *http.Response) bool {
@@ -33,12 +67,11 @@ func DetectRMServers() (servers []*nexusrm.RM) {
 	}
 
 	for p := 1; p < 65535; p++ {
-		url := fmt.Sprintf("%s:%d", host, p)
 		if portInUse(p) {
+			url := fmt.Sprintf("%s:%d", host, p)
+			fmt.Printf("in use: %d\n", p)
 			if resp, err := http.Head(url); err == nil && isRM(resp) {
-				if s, err := nexusrm.New(url, "admin", "admin123"); err == nil {
-					servers = append(servers, s)
-				}
+				servers = append(servers, newDetectedRM(url))
 			}
 		}
 	}
@@ -47,7 +80,7 @@ func DetectRMServers() (servers []*nexusrm.RM) {
 }
 
 // DetectIQServers returns all instances of IQ detected on the local machine
-func DetectIQServers() (servers []*nexusiq.IQ) {
+func DetectIQServers() (servers []DetectedIQ) {
 	host := "http://localhost"
 
 	isIQ := func(resp *http.Response) bool {
@@ -58,15 +91,10 @@ func DetectIQServers() (servers []*nexusiq.IQ) {
 	}
 
 	for p := 1; p < 65535; p++ {
-		url := fmt.Sprintf("%s:%d", host, p)
 		if portInUse(p) {
+			url := fmt.Sprintf("%s:%d", host, p)
 			if resp, err := http.Head(url); err == nil && isIQ(resp) {
-				if s, err := nexusiq.New(url, "admin", "admin123"); err == nil {
-					servers = append(servers, s)
-				}
-				// if s, err := privateiq.New(url, "admin", "admin123"); err == nil {
-				// 	servers = append(servers, s)
-				// }
+				servers = append(servers, newDetectedIQ(url))
 			}
 		}
 	}
