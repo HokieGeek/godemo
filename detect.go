@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/hokiegeek/gonexus"
 	// "github.com/hokiegeek/gonexus-private/iq"
@@ -72,12 +73,39 @@ func newDetectedIQ(host string) (iq DetectedIQ) {
 	return
 }
 
-func portInUse(p int) bool {
-	l, err := net.Listen("tcp", ":"+strconv.Itoa(p))
-	if err == nil {
-		l.Close()
+func detectServers(host string, isServer func(resp *http.Response) bool, foundServer chan<- string) {
+	portInUse := func(p int) bool {
+		l, err := net.Listen("tcp", ":"+strconv.Itoa(p))
+		if err == nil {
+			l.Close()
+		}
+		return err != nil
 	}
-	return err != nil
+
+	var wg sync.WaitGroup
+	ports := make(chan int, 100)
+	for w := 1; w <= 100; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for p := range ports {
+				if portInUse(p) {
+					url := fmt.Sprintf("%s:%d", host, p)
+					if resp, err := http.Head(url); err == nil && isServer(resp) {
+						foundServer <- url
+					}
+				}
+			}
+		}()
+	}
+
+	for p := 1; p < 65535; p++ {
+		ports <- p
+	}
+	close(ports)
+
+	wg.Wait()
+	close(foundServer)
 }
 
 // DetectRMServers returns all instances of Repository Manager detected on the local machine
@@ -91,13 +119,11 @@ func DetectRMServers() (servers []DetectedRM) {
 		return false
 	}
 
-	for p := 1; p < 65535; p++ {
-		if portInUse(p) {
-			url := fmt.Sprintf("%s:%d", host, p)
-			if resp, err := http.Head(url); err == nil && isRM(resp) {
-				servers = append(servers, newDetectedRM(url))
-			}
-		}
+	found := make(chan string, 100)
+	detectServers(host, isRM, found)
+
+	for url := range found {
+		servers = append(servers, newDetectedRM(url))
 	}
 
 	return
@@ -114,13 +140,11 @@ func DetectIQServers() (servers []DetectedIQ) {
 		return false
 	}
 
-	for p := 1; p < 65535; p++ {
-		if portInUse(p) {
-			url := fmt.Sprintf("%s:%d", host, p)
-			if resp, err := http.Head(url); err == nil && isIQ(resp) {
-				servers = append(servers, newDetectedIQ(url))
-			}
-		}
+	found := make(chan string, 100)
+	detectServers(host, isIQ, found)
+
+	for url := range found {
+		servers = append(servers, newDetectedIQ(url))
 	}
 
 	return
