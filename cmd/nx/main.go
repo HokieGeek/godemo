@@ -46,6 +46,7 @@ func createAndDeleteOrg() {
 }
 
 func main() {
+	fmt.Println("Detecting Nexus servers...")
 	demo.Detect()
 
 	app := cli.NewApp()

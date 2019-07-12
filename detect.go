@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hokiegeek/gonexus"
 	// "github.com/hokiegeek/gonexus-private/iq"
@@ -14,6 +15,7 @@ import (
 	"github.com/hokiegeek/gonexus/rm"
 )
 
+// These variables contain the detected servers
 var (
 	RMs []DetectedRM
 	IQs []DetectedIQ
@@ -73,26 +75,31 @@ func newDetectedIQ(host string) (iq DetectedIQ) {
 	return
 }
 
-func detectServers(host string, isServer func(resp *http.Response) bool, foundServer chan<- string) {
-	portInUse := func(p int) bool {
-		l, err := net.Listen("tcp", ":"+strconv.Itoa(p))
+func detectServers(host string, sniff func(string, http.Header)) {
+	portInUse := func(p int) (_ bool) {
+		l, err := net.Listen("tcp4", ":"+strconv.Itoa(p))
 		if err == nil {
 			l.Close()
+			return
 		}
-		return err != nil
+		return true
+	}
+
+	var httpc = &http.Client{
+		Timeout: 1 * time.Second,
 	}
 
 	var wg sync.WaitGroup
-	ports := make(chan int, 100)
-	for w := 1; w <= 100; w++ {
-		wg.Add(1)
+	ports := make(chan int, 200)
+	for w := 1; w <= 50; w++ {
 		go func() {
+			wg.Add(1)
 			defer wg.Done()
 			for p := range ports {
 				if portInUse(p) {
 					url := fmt.Sprintf("%s:%d", host, p)
-					if resp, err := http.Head(url); err == nil && isServer(resp) {
-						foundServer <- url
+					if resp, err := httpc.Head(url); err == nil {
+						sniff(url, resp.Header)
 					}
 				}
 			}
@@ -105,22 +112,19 @@ func detectServers(host string, isServer func(resp *http.Response) bool, foundSe
 	close(ports)
 
 	wg.Wait()
-	close(foundServer)
 }
 
 // DetectRMServers returns all instances of Repository Manager detected on the local machine
 func DetectRMServers() (servers []DetectedRM) {
 	host := "http://localhost"
 
-	isRM := func(resp *http.Response) bool {
-		if v, ok := resp.Header["Server"]; ok {
-			return strings.HasPrefix(v[0], "Nexus")
+	found := make(chan string, 10)
+	detectServers(host, func(url string, headers http.Header) {
+		if v, ok := headers["Server"]; ok && strings.HasPrefix(v[0], "Nexus") {
+			found <- url
 		}
-		return false
-	}
-
-	found := make(chan string, 100)
-	detectServers(host, isRM, found)
+	})
+	close(found)
 
 	for url := range found {
 		servers = append(servers, newDetectedRM(url))
@@ -133,15 +137,13 @@ func DetectRMServers() (servers []DetectedRM) {
 func DetectIQServers() (servers []DetectedIQ) {
 	host := "http://localhost"
 
-	isIQ := func(resp *http.Response) bool {
-		if v, ok := resp.Header["Set-Cookie"]; ok {
-			return strings.HasPrefix(v[0], "CLM-CSRF-TOKEN")
+	found := make(chan string, 10)
+	detectServers(host, func(url string, headers http.Header) {
+		if v, ok := headers["Set-Cookie"]; ok && strings.HasPrefix(v[0], "CLM-CSRF-TOKEN") {
+			found <- url
 		}
-		return false
-	}
-
-	found := make(chan string, 100)
-	detectServers(host, isIQ, found)
+	})
+	close(found)
 
 	for url := range found {
 		servers = append(servers, newDetectedIQ(url))
@@ -152,7 +154,19 @@ func DetectIQServers() (servers []DetectedIQ) {
 
 // Detect populates globals and returns any IQ and RM servers found on the machine
 func Detect() ([]DetectedRM, []DetectedIQ) {
-	RMs = DetectRMServers()
-	IQs = DetectIQServers()
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		RMs = DetectRMServers()
+		wg.Done()
+	}()
+
+	go func() {
+		IQs = DetectIQServers()
+		wg.Done()
+	}()
+
+	wg.Wait()
 	return RMs, IQs
 }
