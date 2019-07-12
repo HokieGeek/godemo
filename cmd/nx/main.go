@@ -2,55 +2,94 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"time"
 
-	// "github.com/hokiegeek/gonexus-private/iq"
 	"github.com/hokiegeek/godemo"
+	"github.com/hokiegeek/gonexus-private/iq"
+	"github.com/hokiegeek/gonexus/iq"
+	// "github.com/hokiegeek/gonexus/rm"
+
+	"github.com/urfave/cli"
 )
 
-func main() {
-	// Identify all Repository Manager servers on the local machine
-	fmt.Println("[RM Servers]")
-	for _, s := range demo.DetectRMServers() {
-		fmt.Println(s.Host)
+func listServers() {
+	for i, s := range demo.RMs {
+		fmt.Printf("RM[%d]: %s\n", i, s.Host)
+	}
+	for i, s := range demo.IQs {
+		fmt.Printf("IQ[%d]: %s\n", i, s.Host)
+	}
+}
+
+func listRepos(idx int) {
+	// if repos, err := nexusrm.GetRepositories(demo.RM(0)); err == nil {
+	if repos, err := demo.Repos(idx); err == nil {
+		for _, r := range repos {
+			fmt.Printf("%-15s (%6s : %s)\n", r.Name, r.Format, r.Type)
+		}
+	}
+}
+
+func createAndDeleteOrg() {
+	orgID, err := nexusiq.CreateOrganization(demo.IQ(0), "arstarst")
+	if err != nil {
+		panic(err)
 	}
 
-	/*
-		// Identify all IQ Servers on the local machine
-		fmt.Println("[IQ Servers]")
-		for _, s := range demo.DetectIQServers() {
-			fmt.Println(s.Host)
-		}
+	time.Sleep(15 * time.Second)
 
-		// Print all repositories in RM on localhost:8081
-		fmt.Println("[RM Repos]")
-		repos, _ := demo.Repos()
-		for _, repo := range repos {
-			fmt.Printf("%s (%s : %s)\n", repo.Name, repo.Format, repo.Type)
-		}
+	if err := privateiq.DeleteOrganization(demo.IQ(0), orgID); err != nil {
+		panic(err)
+	}
+}
 
-		// Print all applications in IQ on localhost:8070
-		fmt.Println("[IQ Apps]")
-		apps, _ := demo.Apps()
-		for _, app := range apps {
-			fmt.Println(app.Name)
-		}
-	*/
-	/*
-		iq, err := nexusiq.New("http://localhost:8070", "admin", "admin123")
-		if err != nil {
-			panic(err)
-		}
+func main() {
+	demo.Detect()
 
-		orgID, err := nexusiq.CreateOrganization(iq, "arstarst")
-		if err != nil {
-			panic(err)
-		}
+	app := cli.NewApp()
 
-		time.Sleep(15 * time.Second)
+	app.Commands = []cli.Command{
+		{
+			Name:    "list",
+			Aliases: []string{"ls"},
+			Usage:   "lists all detected Nexus servers",
+			Action: func(c *cli.Context) error {
+				listServers()
+				return nil
+			},
+		},
+		{
+			Name:  "rm",
+			Usage: "repository-specific commands",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "i",
+					Value: 0,
+				},
+			},
+			Subcommands: []cli.Command{
+				{
+					Name:    "repos",
+					Aliases: []string{"r", "ls"},
+					Usage:   "lists all repos",
+					Action: func(c *cli.Context) error {
+						listRepos(0)
+						return nil
+					},
+				},
+			},
+		},
+	}
 
-		if err := privateiq.DeleteOrganization(iq, orgID); err != nil {
-			panic(err)
-		}
-	*/
+	app.Action = func(c *cli.Context) error {
+		listServers()
+		return nil
+	}
 
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

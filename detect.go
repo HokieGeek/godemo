@@ -13,28 +13,53 @@ import (
 	"github.com/hokiegeek/gonexus/rm"
 )
 
-// DetectedRM provides a helper for a found RM instance
-type DetectedRM struct {
+var (
+	RMs []DetectedRM
+	IQs []DetectedIQ
+)
+
+type detectedServer struct {
 	nexus.ServerInfo
 }
 
+func (d *detectedServer) login(username, password string) *detectedServer {
+	d.Username = username
+	d.Password = password
+	return d
+}
+
+// DetectedRM provides a helper for a found RM instance
+type DetectedRM struct {
+	detectedServer
+}
+
+// Login adds username and password to the detected thingy
+func (d *DetectedRM) Login(username, password string) *DetectedRM {
+	d.login(username, password)
+	return d
+}
+
 // Client returns a client of this RM instance
-func (d DetectedRM) Client() (rm nexusrm.RM) {
-	// TODO: ask for user and password
-	rm, _ = nexusrm.New(d.Host, d.Username, d.Password)
-	return
+func (d DetectedRM) Client() nexusrm.RM {
+	rm, _ := nexusrm.New(d.Host, d.Username, d.Password)
+	return rm
 }
 
 // DetectedIQ provides a helper for a found ÍQ instance
 type DetectedIQ struct {
-	nexus.ServerInfo
+	detectedServer
 }
 
 // Client returns a client of this IQ instance
-func (d DetectedIQ) Client() (iq nexusiq.IQ) {
-	// TODO: ask for user and password
-	iq, _ = nexusiq.New(d.Host, d.Username, d.Password)
-	return
+func (d DetectedIQ) Client() nexusiq.IQ {
+	iq, _ := nexusiq.New(d.Host, d.Username, d.Password)
+	return iq
+}
+
+// Login adds username and password to the detected thingy
+func (d *DetectedIQ) Login(username, password string) *DetectedIQ {
+	d.login(username, password)
+	return d
 }
 
 func newDetectedRM(host string) (rm DetectedRM) {
@@ -69,7 +94,6 @@ func DetectRMServers() (servers []DetectedRM) {
 	for p := 1; p < 65535; p++ {
 		if portInUse(p) {
 			url := fmt.Sprintf("%s:%d", host, p)
-			fmt.Printf("in use: %d\n", p)
 			if resp, err := http.Head(url); err == nil && isRM(resp) {
 				servers = append(servers, newDetectedRM(url))
 			}
@@ -100,4 +124,11 @@ func DetectIQServers() (servers []DetectedIQ) {
 	}
 
 	return
+}
+
+// Detect populates globals and returns any IQ and RM servers found on the machine
+func Detect() ([]DetectedRM, []DetectedIQ) {
+	RMs = DetectRMServers()
+	IQs = DetectIQServers()
+	return RMs, IQs
 }
