@@ -46,9 +46,6 @@ func createAndDeleteOrg() {
 }
 
 func main() {
-	fmt.Println("Detecting Nexus servers...")
-	demo.Detect()
-
 	app := cli.NewApp()
 
 	app.Commands = []cli.Command{
@@ -62,20 +59,26 @@ func main() {
 			},
 		},
 		{
-			Name:  "rm",
-			Usage: "repository-specific commands",
-			Flags: []cli.Flag{
-				cli.IntFlag{
-					Name:  "i",
-					Value: 0,
+			Name:    "rm",
+			Aliases: []string{"r"},
+			Usage:   "repository-specific commands",
+			/*
+				Flags: []cli.Flag{
+					cli.IntFlag{
+						Name:  "i",
+						Value: 0,
+						Usage: "repo `idx`",
+					},
 				},
-			},
+			*/
 			Subcommands: []cli.Command{
 				{
 					Name:    "repos",
-					Aliases: []string{"r", "ls"},
+					Aliases: []string{"l", "ls"},
 					Usage:   "lists all repos",
 					Action: func(c *cli.Context) error {
+						// fmt.Println(c.GlobalInt("i"))
+						// fmt.Println(c.Int("i"))
 						listRepos(0)
 						return nil
 					},
@@ -88,6 +91,9 @@ func main() {
 		listServers()
 		return nil
 	}
+
+	fmt.Println("Detecting Nexus servers...")
+	demo.Detect()
 
 	err := app.Run(os.Args)
 	if err != nil {
