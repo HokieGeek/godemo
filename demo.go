@@ -1,8 +1,8 @@
 package demo
 
 import (
-	"github.com/hokiegeek/gonexus/iq"
-	"github.com/hokiegeek/gonexus/rm"
+	"github.com/sonatype-nexus-community/gonexus/iq"
+	"github.com/sonatype-nexus-community/gonexus/rm"
 )
 
 // RM returns an instance of Repository Manager with demo defaults

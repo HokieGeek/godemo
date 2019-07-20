@@ -1,6 +1,6 @@
 # godemo
 
-Silly little time-saver that takes [github.com/hokiegeek/gonexus](//github.com/hokiegeek/gonexus) and provides some shortcuts to it with an emphasis on my demo instances on localhost with standard ports and logins.
+Silly little time-saver that takes [github.com/sonatype-nexus-community/gonexus](//github.com/sonatype-nexus-community/gonexus) and provides some shortcuts to it with an emphasis on my demo instances on localhost with standard ports and logins.
 
 An example program:
 ```go

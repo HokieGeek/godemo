@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hokiegeek/gonexus"
+	"github.com/sonatype-nexus-community/gonexus"
 	// "github.com/hokiegeek/gonexus-private/iq"
-	"github.com/hokiegeek/gonexus/iq"
-	"github.com/hokiegeek/gonexus/rm"
+	"github.com/sonatype-nexus-community/gonexus/iq"
+	"github.com/sonatype-nexus-community/gonexus/rm"
 )
 
 // These variables contain the detected servers
