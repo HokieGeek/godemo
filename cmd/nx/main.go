@@ -9,7 +9,7 @@ import (
 	"github.com/hokiegeek/godemo"
 	"github.com/hokiegeek/gonexus-private/iq"
 	"github.com/sonatype-nexus-community/gonexus/iq"
-	// "github.com/sonatype-nexus-community/gonexus/rm"
+	"github.com/sonatype-nexus-community/gonexus/rm"
 
 	"github.com/urfave/cli"
 )
@@ -43,6 +43,20 @@ func createAndDeleteOrg() {
 	if err := privateiq.DeleteOrganization(demo.IQ(0), orgID); err != nil {
 		panic(err)
 	}
+}
+
+func rmUploadComponent(idx int, repo, coord, filePath string) {
+	fmt.Println("Uploading component...")
+	file, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = nexusrm.UploadComponent(demo.RM(idx), repo, coord, file); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Success!")
 }
 
 func main() {
@@ -80,6 +94,20 @@ func main() {
 						// fmt.Println(c.GlobalInt("i"))
 						// fmt.Println(c.Int("i"))
 						listRepos(0)
+						return nil
+					},
+				},
+				{
+					Name:    "upload",
+					Aliases: []string{"u", "up"},
+					Usage:   "upload component",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "repo"},
+						cli.StringFlag{Name: "coord"},
+						cli.StringFlag{Name: "file"},
+					},
+					Action: func(c *cli.Context) error {
+						rmUploadComponent(0, c.String("repo"), c.String("coord"), c.String("file"))
 						return nil
 					},
 				},
