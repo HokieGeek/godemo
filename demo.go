@@ -24,3 +24,8 @@ func Repos(idx int) ([]nexusrm.Repository, error) {
 func Apps(idx int) ([]nexusiq.Application, error) {
 	return nexusiq.GetAllApplications(IQ(idx))
 }
+
+// Components returns a list of all of the repositories in the demo RM
+func Components(idx int, repo string) ([]nexusrm.RepositoryItem, error) {
+	return nexusrm.GetComponents(RM(idx), repo)
+}

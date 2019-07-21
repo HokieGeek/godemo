@@ -4,12 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/hokiegeek/godemo"
-	"github.com/hokiegeek/gonexus-private/iq"
-	"github.com/sonatype-nexus-community/gonexus/iq"
-	"github.com/sonatype-nexus-community/gonexus/rm"
 
 	"github.com/urfave/cli"
 )
@@ -21,42 +17,6 @@ func listServers() {
 	for i, s := range demo.IQs {
 		fmt.Printf("IQ[%d]: %s\n", i, s.Host)
 	}
-}
-
-func listRepos(idx int) {
-	// if repos, err := nexusrm.GetRepositories(demo.RM(0)); err == nil {
-	if repos, err := demo.Repos(idx); err == nil {
-		for _, r := range repos {
-			fmt.Printf("%-15s (%6s : %s)\n", r.Name, r.Format, r.Type)
-		}
-	}
-}
-
-func createAndDeleteOrg() {
-	orgID, err := nexusiq.CreateOrganization(demo.IQ(0), "arstarst")
-	if err != nil {
-		panic(err)
-	}
-
-	time.Sleep(15 * time.Second)
-
-	if err := privateiq.DeleteOrganization(demo.IQ(0), orgID); err != nil {
-		panic(err)
-	}
-}
-
-func rmUploadComponent(idx int, repo, coord, filePath string) {
-	fmt.Println("Uploading component...")
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err)
-	}
-
-	if err = nexusrm.UploadComponent(demo.RM(idx), repo, coord, file); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Success!")
 }
 
 func main() {
@@ -76,24 +36,37 @@ func main() {
 			Name:    "rm",
 			Aliases: []string{"r"},
 			Usage:   "repository-specific commands",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "idx, i",
+					Value: 0,
+					Usage: "repo `idx`",
+				},
+			},
 			/*
-				Flags: []cli.Flag{
-					cli.IntFlag{
-						Name:  "i",
-						Value: 0,
-						Usage: "repo `idx`",
-					},
+				Action: func(c *cli.Context) error {
+					TODO: list server info
+					fmt.Println(c.Int("idx"))
+					listRepos(0)
+					return nil
 				},
 			*/
 			Subcommands: []cli.Command{
 				{
 					Name:    "repos",
-					Aliases: []string{"l", "ls"},
+					Aliases: []string{"r"},
 					Usage:   "lists all repos",
 					Action: func(c *cli.Context) error {
-						// fmt.Println(c.GlobalInt("i"))
-						// fmt.Println(c.Int("i"))
-						listRepos(0)
+						rmListRepos(c.Parent().Int("idx"))
+						return nil
+					},
+				},
+				{
+					Name:    "ls",
+					Aliases: []string{"l"},
+					Usage:   "lists all components in a repo",
+					Action: func(c *cli.Context) error {
+						rmListRepoComponents(c.Parent().Int("idx"), c.Args())
 						return nil
 					},
 				},
@@ -102,12 +75,12 @@ func main() {
 					Aliases: []string{"u", "up"},
 					Usage:   "upload component",
 					Flags: []cli.Flag{
-						cli.StringFlag{Name: "repo"},
-						cli.StringFlag{Name: "coord"},
-						cli.StringFlag{Name: "file"},
+						cli.StringFlag{Name: "repo, r"},
+						cli.StringFlag{Name: "coord, c"},
+						cli.StringFlag{Name: "file, f"},
 					},
 					Action: func(c *cli.Context) error {
-						rmUploadComponent(0, c.String("repo"), c.String("coord"), c.String("file"))
+						rmUploadComponent(c.Parent().Int("idx"), c.String("repo"), c.String("coord"), c.String("file"))
 						return nil
 					},
 				},
@@ -120,7 +93,7 @@ func main() {
 		return nil
 	}
 
-	fmt.Println("Detecting Nexus servers...")
+	log.Println("Detecting Nexus servers...")
 	demo.Detect()
 
 	err := app.Run(os.Args)
