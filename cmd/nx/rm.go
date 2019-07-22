@@ -68,8 +68,7 @@ var rmCommand = cli.Command{
 func rmListRepos(idx int) {
 	format := "%s, %s, %s, %s\n"
 	fmt.Printf(format, "Name", "Format", "Type", "URL")
-	// if repos, err := demo.Repos(idx); err == nil {
-	if repos, err := nexusrm.GetRepositories(demo.RM(idx)); err == nil {
+	if repos, err := demo.Repos(idx); err == nil {
 		for _, r := range repos {
 			fmt.Printf(format, r.Name, r.Format, r.Type, r.URL)
 		}
@@ -81,15 +80,14 @@ func rmListRepoComponents(idx int, repos []string) {
 	fmt.Printf(format, "Repository", "Group", "Name", "Version", "Tags")
 
 	if len(repos) == 0 {
-		all, _ := nexusrm.GetRepositories(demo.RM(idx))
+		all, _ := demo.Repos(idx)
 		for _, r := range all {
 			repos = append(repos, r.Name)
 		}
 	}
 
 	for _, repo := range repos {
-		// if components, err := demo.Components(idx, repo); err == nil {
-		if components, err := nexusrm.GetComponents(demo.RM(idx), repo); err == nil {
+		if components, err := demo.Components(idx, repo); err == nil {
 			for _, c := range components {
 				fmt.Printf(format, c.Repository, c.Group, c.Name, c.Version, strings.Join(c.Tags, ";"))
 			}
@@ -104,10 +102,13 @@ func rmUploadComponent(idx int, repo, coord, filePath string) {
 		panic(err)
 	}
 
+	// FIXME: something other than maven, please
+	// if len(coord) > 0 {
 	upload, err := nexusrm.NewUploadComponentMaven(coord, file)
 	if err != nil {
 		panic(err)
 	}
+	// }
 
 	if err = nexusrm.UploadComponent(demo.RM(idx), repo, upload); err != nil {
 		panic(err)
