@@ -38,8 +38,8 @@ func Orgs(idx int) ([]nexusiq.Organization, error) {
 	return nexusiq.GetAllOrganizations(IQ(idx))
 }
 
-// OrgsIdMap returns a map of organization ids by name and the reverse
-func OrgsIdMap(idx int) (id2name map[string]string, name2id map[string]string, err error) {
+// OrgsIDMap returns a map of organization ids by name and the reverse
+func OrgsIDMap(idx int) (id2name map[string]string, name2id map[string]string, err error) {
 	if orgs, err := Orgs(idx); err == nil {
 		id2name = make(map[string]string)
 		name2id = make(map[string]string)

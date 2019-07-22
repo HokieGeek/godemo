@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/hokiegeek/godemo"
+	"github.com/hokiegeek/gonexus-private/iq"
 	"github.com/sonatype-nexus-community/gonexus/iq"
 	"github.com/urfave/cli"
 )
@@ -52,26 +53,50 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:  "policies",
+			Usage: "Do stuff with policies",
+			Subcommands: []cli.Command{
+				{
+					Name:    "export",
+					Aliases: []string{"a"},
+					Usage:   "exports the policies of the indicated IQ",
+					Action: func(c *cli.Context) error {
+						exportPolicies(c.Parent().Int("idx"))
+						return nil
+					},
+				},
+				/*
+					{
+						Name:    "import",
+						Aliases: []string{"i"},
+						Usage:   "Import the indicated policies",
+						Action: func(c *cli.Context) error {
+							// iqListOrgs(c.Parent().Int("idx"))
+							return nil
+						},
+					},
+				*/
+			},
+		},
 	},
 }
 
 func iqListApps(idx int) {
-	format := "%s, %s, %s, %s\n"
-	fmt.Printf(format, "Name", "Public ID", "ID", "Organization ID")
-	orgsId2Name, _, _ := demo.OrgsIdMap(idx)
+	fmt.Printf("%s, %s, %s, %s\n", "Name", "Public ID", "ID", "Organization ID")
+	orgsID2Name, _, _ := demo.OrgsIDMap(idx)
 	if apps, err := nexusiq.GetAllApplications(demo.IQ(idx)); err == nil {
 		for _, a := range apps {
-			fmt.Printf(format, a.Name, a.PublicID, a.ID, orgsId2Name[a.OrganizationID])
+			fmt.Printf("%s, %s, %s, %s\n", a.Name, a.PublicID, a.ID, orgsID2Name[a.OrganizationID])
 		}
 	}
 }
 
 func iqListOrgs(idx int) {
-	format := "%s, %s\n"
-	fmt.Printf(format, "Name", "ID")
+	fmt.Printf("%s, %s\n", "Name", "ID")
 	if orgs, err := nexusiq.GetAllOrganizations(demo.IQ(idx)); err == nil {
 		for _, o := range orgs {
-			fmt.Printf(format, o.Name, o.ID)
+			fmt.Printf("%s, %s\n", o.Name, o.ID)
 		}
 	}
 }
@@ -83,6 +108,20 @@ func iqEvaluate(idx int, app string, components []string) {
 	}
 
 	json, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(json))
+}
+
+func exportPolicies(idx int) {
+	policies, err := privateiq.ExportPolicies(demo.IQ(idx))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	json, err := json.MarshalIndent(policies, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
