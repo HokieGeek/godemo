@@ -45,7 +45,7 @@ func main() {
 A few example commands:
 
 | Description | Example |
--------------------------
+|-------------|---------|
 | List all Nexus servers on the local machine | `nx ls` |
 | List all component in the listed repositories | `nx rm ls maven-releases npm-proxy golang-group` |
 | List all applications in an IQ instance | `nx iq app` |
