@@ -25,16 +25,16 @@ func main() {
 		fmt.Println(s.Host)
 	}
 
-	// Print all repositories in RM on localhost:8081
+	// Print all repositories in first detected RM
 	fmt.Println("[RM Repos]")
-	repos, _ := demo.Repos()
+	repos, _ := demo.Repos(0)
 	for _, repo := range repos {
 		fmt.Printf("%s (%s : %s)\n", repo.Name, repo.Format, repo.Type)
 	}
 
-	// Print all applications in IQ on localhost:8070
+	// Print all applications in first detected IQ
 	fmt.Println("[IQ Apps]")
-	apps, _ := demo.Apps()
+	apps, _ := demo.Apps(0)
 	for _, app := range apps {
 		fmt.Println(app.Name)
 	}
