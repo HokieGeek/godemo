@@ -79,6 +79,14 @@ func rmListRepos(idx int) {
 func rmListRepoComponents(idx int, repos []string) {
 	format := "%s, %s, %s, %s, %s\n"
 	fmt.Printf(format, "Repository", "Group", "Name", "Version", "Tags")
+
+	if len(repos) == 0 {
+		all, _ := nexusrm.GetRepositories(demo.RM(idx))
+		for _, r := range all {
+			repos = append(repos, r.Name)
+		}
+	}
+
 	for _, repo := range repos {
 		// if components, err := demo.Components(idx, repo); err == nil {
 		if components, err := nexusrm.GetComponents(demo.RM(idx), repo); err == nil {
