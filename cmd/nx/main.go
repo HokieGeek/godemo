@@ -23,9 +23,8 @@ func main() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:    "list",
-			Aliases: []string{"ls"},
-			Usage:   "lists all detected Nexus servers",
+			Name:  "ls",
+			Usage: "lists all detected Nexus servers",
 			Action: func(c *cli.Context) error {
 				listServers()
 				return nil
