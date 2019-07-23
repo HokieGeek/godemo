@@ -88,3 +88,24 @@ func Eval(idx int, appID string, components ...string) (report *nexusiq.Evaluati
 
 	return
 }
+
+func RmReadOnly(idx int, enable, forceRelease bool) {
+	if enable {
+		nexusrm.ReadOnlyEnable(RM(idx))
+	} else {
+		nexusrm.ReadOnlyRelease(RM(idx), forceRelease)
+	}
+}
+
+// RmReadOnlyToggle Toggles read-only mode
+func RmReadOnlyToggle(idx int) {
+	state, err := nexusrm.GetReadOnlyState(RM(idx))
+	if err != nil {
+		return
+	}
+	if state.Frozen {
+		RmReadOnly(idx, false, false)
+	} else {
+		RmReadOnly(idx, true, false)
+	}
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -21,15 +22,19 @@ var rmCommand = cli.Command{
 			Usage: "rm `idx`",
 		},
 	},
-	/*
-		Action: func(c *cli.Context) error {
-			TODO: list server info
-			fmt.Println(c.Int("idx"))
-			listRepos(0)
-			return nil
-		},
-	*/
+	Action: func(c *cli.Context) error {
+		rmStatus(c.Int("idx"))
+		return nil
+	},
 	Subcommands: []cli.Command{
+		{
+			Name:  "get",
+			Usage: "perform an http get",
+			Action: func(c *cli.Context) error {
+				rmGet(c.Parent().Int("idx"), c.Args().First())
+				return nil
+			},
+		},
 		{
 			Name:    "repos",
 			Aliases: []string{"r"},
@@ -62,7 +67,51 @@ var rmCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:  "ro",
+			Usage: "read-only mode functions",
+			Action: func(c *cli.Context) error {
+				demo.RmReadOnlyToggle(c.Parent().Int("idx"))
+				rmStatus(c.Parent().Int("idx"))
+				return nil
+			},
+			Subcommands: []cli.Command{
+				{
+					Name:    "enable",
+					Aliases: []string{"e"},
+					Usage:   "enables read-only mode",
+					Action: func(c *cli.Context) error {
+						demo.RmReadOnly(c.Parent().Parent().Int("idx"), true, false)
+						rmStatus(c.Parent().Int("idx"))
+						return nil
+					},
+				},
+				{
+					Name:    "release",
+					Aliases: []string{"r"},
+					Usage:   "releases from read-only mode",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "force, f"},
+					},
+					Action: func(c *cli.Context) error {
+						demo.RmReadOnly(c.Parent().Parent().Int("idx"), false, c.Bool("force"))
+						rmStatus(c.Parent().Int("idx"))
+						return nil
+					},
+				},
+			},
+		},
 	},
+}
+
+func rmGet(idx int, endpoint string) {
+	body, resp, err := demo.RM(idx).Get(endpoint)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println(resp)
+	fmt.Println(body)
 }
 
 func rmListRepos(idx int) {
@@ -115,4 +164,13 @@ func rmUploadComponent(idx int, repo, coord, filePath string) {
 	}
 
 	fmt.Println("Success!")
+}
+
+func rmStatus(idx int) {
+	fmt.Println(demo.RM(idx).Info().Host)
+	fmt.Printf("Readable: %v\n", nexusrm.StatusReadable(demo.RM(idx)))
+	fmt.Printf("Writable: %v\n", nexusrm.StatusWritable(demo.RM(idx)))
+
+	state, _ := nexusrm.GetReadOnlyState(demo.RM(idx))
+	fmt.Println(state)
 }
