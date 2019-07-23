@@ -94,7 +94,7 @@ func iqListApps(idx int) {
 
 func iqListOrgs(idx int) {
 	fmt.Printf("%s, %s\n", "Name", "ID")
-	if orgs, err := nexusiq.GetAllOrganizations(demo.IQ(idx)); err == nil {
+	if orgs, err := demo.Orgs(idx); err == nil {
 		for _, o := range orgs {
 			fmt.Printf("%s, %s\n", o.Name, o.ID)
 		}
