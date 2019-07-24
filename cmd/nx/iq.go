@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"text/template"
 
 	"github.com/hokiegeek/godemo"
 	"github.com/hokiegeek/gonexus-private/iq"
@@ -47,9 +49,10 @@ var iqCommand = cli.Command{
 			Usage:   "evaluate the components",
 			Flags: []cli.Flag{
 				cli.StringFlag{Name: "app, a"},
+				cli.StringFlag{Name: "format, f"},
 			},
 			Action: func(c *cli.Context) error {
-				iqEvaluate(c.Parent().Int("idx"), c.String("app"), c.Args())
+				iqEvaluate(c.Parent().Int("idx"), c.String("app"), c.String("format"), c.Args())
 				return nil
 			},
 		},
@@ -101,18 +104,23 @@ func iqListOrgs(idx int) {
 	}
 }
 
-func iqEvaluate(idx int, app string, components []string) {
+func iqEvaluate(idx int, app, format string, components []string) {
 	report, err := demo.Eval(idx, app, components...)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	json, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
+	if format != "" {
+		tmpl := template.Must(template.New("report").Parse(format))
+		tmpl.Execute(os.Stdout, report)
+	} else {
+		json, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	fmt.Println(string(json))
+		fmt.Println(string(json))
+	}
 }
 
 func exportPolicies(idx int) {
