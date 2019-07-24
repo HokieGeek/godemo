@@ -8,14 +8,21 @@ import (
 	"github.com/sonatype-nexus-community/gonexus/rm"
 )
 
+const (
+	defaultRMUser = "admin"
+	defaultRMPass = "admin123"
+	defaultIQUser = "admin"
+	defaultIQPass = "admin123"
+)
+
 // RM returns an instance of Repository Manager with demo defaults
 func RM(idx int) nexusrm.RM {
-	return RMs[idx].Login("admin", "admin123").Client()
+	return RMs[idx].Auth(defaultRMUser, defaultRMPass).Client()
 }
 
 // IQ returns an instance of IQ Server with demo defaults
 func IQ(idx int) nexusiq.IQ {
-	return IQs[idx].Login("admin", "admin123").Client()
+	return IQs[idx].Auth(defaultIQUser, defaultIQPass).Client()
 }
 
 // Repos returns a list of all of the repositories in the demo RM
@@ -89,6 +96,7 @@ func Eval(idx int, appID string, components ...string) (report *nexusiq.Evaluati
 	return
 }
 
+// RmReadOnly allows to control the read-only state of an RM instance
 func RmReadOnly(idx int, enable, forceRelease bool) {
 	if enable {
 		nexusrm.ReadOnlyEnable(RM(idx))

@@ -25,7 +25,7 @@ type detectedServer struct {
 	nexus.ServerInfo
 }
 
-func (d *detectedServer) login(username, password string) *detectedServer {
+func (d *detectedServer) auth(username, password string) *detectedServer {
 	d.Username = username
 	d.Password = password
 	return d
@@ -36,9 +36,9 @@ type DetectedRM struct {
 	detectedServer
 }
 
-// Login adds username and password to the detected thingy
-func (d *DetectedRM) Login(username, password string) *DetectedRM {
-	d.login(username, password)
+// Auth adds username and password to the detected thingy
+func (d *DetectedRM) Auth(username, password string) *DetectedRM {
+	d.auth(username, password)
 	return d
 }
 
@@ -59,9 +59,9 @@ func (d DetectedIQ) Client() nexusiq.IQ {
 	return iq
 }
 
-// Login adds username and password to the detected thingy
-func (d *DetectedIQ) Login(username, password string) *DetectedIQ {
-	d.login(username, password)
+// Auth adds username and password to the detected thingy
+func (d *DetectedIQ) Auth(username, password string) *DetectedIQ {
+	d.auth(username, password)
 	return d
 }
 
@@ -91,7 +91,7 @@ func detectServers(host string, sniff func(string, http.Header)) {
 
 	var wg sync.WaitGroup
 	ports := make(chan int, 200)
-	for w := 1; w <= 50; w++ {
+	for w := 1; w <= 120; w++ {
 		go func() {
 			wg.Add(1)
 			defer wg.Done()

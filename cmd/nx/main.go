@@ -20,27 +20,31 @@ func listServers() {
 
 func main() {
 	app := cli.NewApp()
+	app.Usage = "CLI to interact with Repository Manager and IQ"
+	app.HideVersion = true
+
+	defaultAction := func(c *cli.Context) error {
+		listServers()
+		return nil
+	}
 
 	app.Commands = []cli.Command{
 		{
-			Name:  "ls",
-			Usage: "lists all detected Nexus servers",
-			Action: func(c *cli.Context) error {
-				listServers()
-				return nil
-			},
+			Name:   "ls",
+			Usage:  "lists all detected Nexus servers",
+			Action: defaultAction,
 		},
 		rmCommand,
 		iqCommand,
 	}
 
-	app.Action = func(c *cli.Context) error {
-		listServers()
+	app.Action = defaultAction
+
+	app.Before = func(c *cli.Context) error {
+		log.Println("Discovering Nexus servers...")
+		demo.Detect()
 		return nil
 	}
-
-	log.Println("Discovering Nexus servers...")
-	demo.Detect()
 
 	err := app.Run(os.Args)
 	if err != nil {

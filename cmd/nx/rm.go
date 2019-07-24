@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -29,9 +31,17 @@ var rmCommand = cli.Command{
 	Subcommands: []cli.Command{
 		{
 			Name:  "get",
-			Usage: "perform an http get",
+			Usage: "perform an http GET",
 			Action: func(c *cli.Context) error {
 				rmGet(c.Parent().Int("idx"), c.Args().First())
+				return nil
+			},
+		},
+		{
+			Name:  "del",
+			Usage: "perform an http DELETE",
+			Action: func(c *cli.Context) error {
+				rmDel(c.Parent().Int("idx"), c.Args().First())
 				return nil
 			},
 		},
@@ -54,8 +64,8 @@ var rmCommand = cli.Command{
 			},
 		},
 		{
-			Name:    "upload",
-			Aliases: []string{"u", "up"},
+			Name:    "up",
+			Aliases: []string{"u"},
 			Usage:   "upload component",
 			Flags: []cli.Flag{
 				cli.StringFlag{Name: "repo, r"},
@@ -101,6 +111,14 @@ var rmCommand = cli.Command{
 				},
 			},
 		},
+		{
+			Name:  "zip",
+			Usage: "get support zip",
+			Action: func(c *cli.Context) error {
+				rmZip(c.Parent().Int("idx"))
+				return nil
+			},
+		},
 	},
 }
 
@@ -114,20 +132,33 @@ func rmGet(idx int, endpoint string) {
 	fmt.Println(body)
 }
 
+func rmDel(idx int, endpoint string) {
+	if _, err := demo.RM(idx).Del(endpoint); err != nil {
+		panic(err)
+	}
+}
+
 func rmListRepos(idx int) {
-	format := "%s, %s, %s, %s\n"
-	fmt.Printf(format, "Name", "Format", "Type", "URL")
+	w := csv.NewWriter(os.Stdout)
+
+	w.Write([]string{"Name", "Format", "Type", "URL"})
 	if repos, err := demo.Repos(idx); err == nil {
 		for _, r := range repos {
-			fmt.Printf(format, r.Name, r.Format, r.Type, r.URL)
+			w.Write([]string{r.Name, r.Format, r.Type, r.URL})
 		}
+	}
+
+	w.Flush()
+
+	if err := w.Error(); err != nil {
+		panic(err)
 	}
 }
 
 func rmListRepoComponents(idx int, repos []string) {
-	format := "%s, %s, %s, %s, %s\n"
-	fmt.Printf(format, "Repository", "Group", "Name", "Version", "Tags")
+	w := csv.NewWriter(os.Stdout)
 
+	w.Write([]string{"Repository", "Group", "Name", "Version", "Tags"})
 	if len(repos) == 0 {
 		all, _ := demo.Repos(idx)
 		for _, r := range all {
@@ -138,9 +169,15 @@ func rmListRepoComponents(idx int, repos []string) {
 	for _, repo := range repos {
 		if components, err := demo.Components(idx, repo); err == nil {
 			for _, c := range components {
-				fmt.Printf(format, c.Repository, c.Group, c.Name, c.Version, strings.Join(c.Tags, ";"))
+				w.Write([]string{c.Repository, c.Group, c.Name, c.Version, strings.Join(c.Tags, ";")})
 			}
 		}
+	}
+
+	w.Flush()
+
+	if err := w.Error(); err != nil {
+		panic(err)
 	}
 }
 
@@ -173,4 +210,17 @@ func rmStatus(idx int) {
 
 	state, _ := nexusrm.GetReadOnlyState(demo.RM(idx))
 	fmt.Println(state)
+}
+
+func rmZip(idx int) {
+	zip, name, err := nexusrm.GetSupportZip(demo.RM(idx), nexusrm.NewSupportZipOptions())
+	if err != nil {
+		panic(err)
+	}
+
+	if err = ioutil.WriteFile(name, zip, 0644); err != nil {
+		panic(err)
+	}
+
+	log.Printf("Created %s\n", name)
 }
