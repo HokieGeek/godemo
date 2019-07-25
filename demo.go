@@ -64,10 +64,17 @@ func IQComponentFromString(component string) nexusiq.Component {
 
 	var c nexusiq.Component
 	c.ComponentID.Format = split[0]
-	c.ComponentID.Coordinates.ArtifactID = split[1]
-	c.ComponentID.Coordinates.GroupID = split[2]
-	c.ComponentID.Coordinates.Version = split[3]
-	c.ComponentID.Coordinates.Extension = split[4]
+
+	switch c.ComponentID.Format {
+	case "maven":
+		c.ComponentID.Coordinates.GroupID = split[1]
+		c.ComponentID.Coordinates.ArtifactID = split[2]
+		c.ComponentID.Coordinates.Version = split[3]
+		c.ComponentID.Coordinates.Extension = split[4]
+	case "gem":
+		c.ComponentID.Coordinates.ArtifactID = split[1]
+		c.ComponentID.Coordinates.Version = split[2]
+	}
 	return c
 }
 
@@ -82,6 +89,7 @@ func IQComponentSliceFromStringSlice(components []string) []nexusiq.Component {
 
 // Eval performs a Lifecycle evaluation of the indicated component
 func Eval(idx int, appID string, components ...string) (report *nexusiq.Evaluation, err error) {
+	// "format":"gem","coordinates":{"name":"rexml","platform":"ruby","version":"3.2.2"}
 	c := IQComponentSliceFromStringSlice(components)
 
 	if appID != "" {
@@ -117,3 +125,84 @@ func RmReadOnlyToggle(idx int) {
 		RmReadOnly(idx, true, false)
 	}
 }
+
+/*
+func create(iq nexusiq.IQ, app, repo, token string) {
+	err := nexusiq.CreateSourceControlEntry(iq, app, repo, token)
+	if err != nil {
+		panic(err)
+	}
+
+	entry, err := nexusiq.GetSourceControlEntry(iq, app)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%q\n", entry)
+}
+
+func del(iq nexusiq.IQ, app, id string) {
+	nexusiq.DeleteSourceControlEntry(iq, app, id)
+}
+
+func get(iq nexusiq.IQ, app string) (nexusiq.SourceControlEntry, error) {
+	return nexusiq.GetSourceControlEntry(iq, app)
+}
+
+func main() {
+	createCmd := flag.NewFlagSet("create", flag.ExitOnError)
+	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
+	deleteCmd := flag.NewFlagSet("delete", flag.ExitOnError)
+
+	iq, err := nexusiq.New("http://localhost:8070", "admin", "admin123")
+	if err != nil {
+		panic(err)
+	}
+
+	switch os.Args[1] {
+	case "c", "create":
+		appIDPtr := createCmd.String("app", "", "The identifier of the application in IQ")
+		repoPtr := createCmd.String("repo", "", "The repo")
+		tokenPtr := createCmd.String("token", "", "SC Token")
+
+		createCmd.Parse(os.Args[2:])
+
+		create(iq, *appIDPtr, *repoPtr, *tokenPtr)
+	case "d", "delete":
+		appIDPtr := deleteCmd.String("app", "", "The identifier of the application in IQ")
+		entryPtr := deleteCmd.String("entry", "", "The ID of the SC entry")
+
+		deleteCmd.Parse(os.Args[2:])
+
+		var scEntryID string
+		if *entryPtr != "" {
+			scEntryID = *entryPtr
+		} else {
+			scEntry, _ := get(iq, *appIDPtr)
+			scEntryID = scEntry.ID
+		}
+
+		del(iq, *appIDPtr, scEntryID)
+	case "l", "list":
+		appIDPtr := listCmd.String("app", "", "The identifier of the application in IQ")
+
+		listCmd.Parse(os.Args[2:])
+
+		if *appIDPtr != "" {
+			entry, _ := get(iq, *appIDPtr)
+			fmt.Printf("%v\n", entry)
+		} else {
+			log.Println("listing all entries...")
+			apps, err := nexusiq.GetAllApplications(iq)
+			if err != nil {
+				panic(err)
+			}
+			for _, app := range apps {
+				if entry, err := get(iq, app.PublicID); err == nil {
+					fmt.Printf("%s: %v\n", app.PublicID, entry)
+				}
+			}
+		}
+	}
+}
+*/
