@@ -140,6 +140,18 @@ var iqCommand = cli.Command{
 				},
 			},
 		},
+		{
+			Name:    "report",
+			Aliases: []string{"r"},
+			Usage:   "Get application reports",
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "format, f"},
+			},
+			Action: func(c *cli.Context) error {
+				appReport(c.Parent().Int("idx"), c.String("format"), c.Args()...)
+				return nil
+			},
+		},
 	},
 }
 
@@ -231,5 +243,24 @@ func scList(idx int, appID string) {
 				fmt.Printf("%s: %v\n", app.PublicID, entry)
 			}
 		}
+	}
+}
+
+func appReport(idx int, format string, appIDs ...string) {
+	report, err := nexusiq.GetReportByAppID(demo.IQ(idx), appIDs[0], "build")
+	if err != nil {
+		panic(err)
+	}
+
+	if format != "" {
+		tmpl := template.Must(template.New("report").Parse(format))
+		tmpl.Execute(os.Stdout, report)
+	} else {
+		json, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(string(json))
 	}
 }

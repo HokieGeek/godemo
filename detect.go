@@ -92,8 +92,8 @@ func detectServers(host string, sniff func(string, http.Header)) {
 	var wg sync.WaitGroup
 	ports := make(chan int, 200)
 	for w := 1; w <= 120; w++ {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			for p := range ports {
 				if portInUse(p) {
