@@ -1,8 +1,6 @@
 package demo
 
 import (
-	"strings"
-
 	"github.com/hokiegeek/gonexus-private/iq"
 	"github.com/sonatype-nexus-community/gonexus/iq"
 	"github.com/sonatype-nexus-community/gonexus/rm"
@@ -58,38 +56,18 @@ func OrgsIDMap(idx int) (id2name map[string]string, name2id map[string]string, e
 	return
 }
 
-// IQComponentFromString splits a : delimeted component name into an IQ Component
-func IQComponentFromString(component string) nexusiq.Component {
-	split := strings.Split(component, ":")
-
-	var c nexusiq.Component
-	c.ComponentID.Format = split[0]
-
-	switch c.ComponentID.Format {
-	case "maven":
-		c.ComponentID.Coordinates.GroupID = split[1]
-		c.ComponentID.Coordinates.ArtifactID = split[2]
-		c.ComponentID.Coordinates.Version = split[3]
-		c.ComponentID.Coordinates.Extension = split[4]
-	case "gem":
-		c.ComponentID.Coordinates.ArtifactID = split[1]
-		c.ComponentID.Coordinates.Version = split[2]
-	}
-	return c
-}
-
 // IQComponentSliceFromStringSlice converts slice of : delimeted component names into a slice of IQ Component
 func IQComponentSliceFromStringSlice(components []string) []nexusiq.Component {
 	comps := make([]nexusiq.Component, len(components))
 	for i, c := range components {
-		comps[i] = IQComponentFromString(c)
+		comp, _ := nexusiq.NewComponentFromString(c)
+		comps[i] = *comp
 	}
 	return comps
 }
 
 // Eval performs a Lifecycle evaluation of the indicated component
 func Eval(idx int, appID string, components ...string) (report *nexusiq.Evaluation, err error) {
-	// "format":"gem","coordinates":{"name":"rexml","platform":"ruby","version":"3.2.2"}
 	c := IQComponentSliceFromStringSlice(components)
 
 	if appID != "" {
