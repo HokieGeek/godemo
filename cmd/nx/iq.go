@@ -217,25 +217,19 @@ func scDelete(idx int) {
 }
 
 func scList(idx int, appID string) {
-	/*
-		appIDPtr := listCmd.String("app", "", "The identifier of the application in IQ")
-
-		listCmd.Parse(os.Args[2:])
-
-		if *appIDPtr != "" {
-			entry, _ := get(iq, *appIDPtr)
-			fmt.Printf("%v\n", entry)
-		} else {
-			log.Println("listing all entries...")
-			apps, err := nexusiq.GetAllApplications(iq)
-			if err != nil {
-				panic(err)
-			}
-			for _, app := range apps {
-				if entry, err := get(iq, app.PublicID); err == nil {
-					fmt.Printf("%s: %v\n", app.PublicID, entry)
-				}
+	iq := demo.IQ(idx)
+	if appID != "" {
+		entry, _ := nexusiq.GetSourceControlEntry(iq, appID)
+		fmt.Printf("%v\n", entry)
+	} else {
+		apps, err := nexusiq.GetAllApplications(iq)
+		if err != nil {
+			panic(err)
+		}
+		for _, app := range apps {
+			if entry, err := nexusiq.GetSourceControlEntry(iq, app.PublicID); err == nil {
+				fmt.Printf("%s: %v\n", app.PublicID, entry)
 			}
 		}
-	*/
+	}
 }
