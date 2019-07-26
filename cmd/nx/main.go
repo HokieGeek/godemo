@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -8,6 +9,11 @@ import (
 	"github.com/hokiegeek/godemo"
 	"github.com/urfave/cli"
 )
+
+var tmplJSONPretty = func(v interface{}) string {
+	a, _ := json.MarshalIndent(v, "", "  ")
+	return string(a)
+}
 
 func listServers() {
 	for i, s := range demo.RMs {

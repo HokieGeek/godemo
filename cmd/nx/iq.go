@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/hokiegeek/godemo"
@@ -143,7 +144,7 @@ var iqCommand = cli.Command{
 		{
 			Name:    "report",
 			Aliases: []string{"r"},
-			Usage:   "Get application reports",
+			Usage:   "r [appID:stage] [appID:stage] [appID]",
 			Flags: []cli.Flag{
 				cli.StringFlag{Name: "format, f"},
 			},
@@ -181,7 +182,7 @@ func iqEvaluate(idx int, app, format string, components []string) {
 	}
 
 	if format != "" {
-		tmpl := template.Must(template.New("report").Parse(format))
+		tmpl := template.Must(template.New("report").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
 		tmpl.Execute(os.Stdout, report)
 	} else {
 		json, err := json.MarshalIndent(report, "", "  ")
@@ -246,21 +247,27 @@ func scList(idx int, appID string) {
 	}
 }
 
-func appReport(idx int, format string, appIDs ...string) {
-	report, err := nexusiq.GetReportByAppID(demo.IQ(idx), appIDs[0], "build")
-	if err != nil {
-		panic(err)
-	}
+func appReport(idx int, format string, apps ...string) {
+	for _, app := range apps {
+		splitPos := strings.LastIndex(app, ":")
+		appID := app[:splitPos]
+		stage := app[splitPos+1:]
 
-	if format != "" {
-		tmpl := template.Must(template.New("report").Parse(format))
-		tmpl.Execute(os.Stdout, report)
-	} else {
-		json, err := json.MarshalIndent(report, "", "  ")
+		report, err := nexusiq.GetReportByAppID(demo.IQ(idx), appID, stage)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("did not find report for '%s' at '%s' build stage: %v", appID, stage, err)
 		}
 
-		fmt.Println(string(json))
+		if format != "" {
+			tmpl := template.Must(template.New("report").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+			tmpl.Execute(os.Stdout, report)
+		} else {
+			json, err := json.MarshalIndent(report, "", "  ")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(string(json))
+		}
 	}
 }
