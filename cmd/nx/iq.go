@@ -82,6 +82,64 @@ var iqCommand = cli.Command{
 				*/
 			},
 		},
+		{
+			Name:  "sc",
+			Usage: "source control actions",
+			Action: func(c *cli.Context) error {
+				scList(c.Parent().Int("idx"), "")
+				return nil
+			},
+			Subcommands: []cli.Command{
+				{
+					Name:    "create",
+					Aliases: []string{"c"},
+					Usage:   "creates a source control entry",
+					Action: func(c *cli.Context) error {
+						/*
+							appIDPtr := createCmd.String("app", "", "The identifier of the application in IQ")
+							repoPtr := createCmd.String("repo", "", "The repo")
+							tokenPtr := createCmd.String("token", "", "SC Token")
+						*/
+						scCreate(c.Parent().Parent().Int("idx"))
+						return nil
+					},
+				},
+				{
+					Name:    "delete",
+					Aliases: []string{"d"},
+					Usage:   "deletes a source control entry",
+					Action: func(c *cli.Context) error {
+						/*
+							appIDPtr := deleteCmd.String("app", "", "The identifier of the application in IQ")
+							entryPtr := deleteCmd.String("entry", "", "The ID of the SC entry")
+
+							deleteCmd.Parse(os.Args[2:])
+
+							var scEntryID string
+							if *entryPtr != "" {
+								scEntryID = *entryPtr
+							} else {
+								scEntry, _ := get(iq, *appIDPtr)
+								scEntryID = scEntry.ID
+							}
+
+							del(iq, *appIDPtr, scEntryID)
+						*/
+						scDelete(c.Parent().Parent().Int("idx"))
+						return nil
+					},
+				},
+				{
+					Name:    "list",
+					Aliases: []string{"l"},
+					Usage:   "deletes a source control entry",
+					Action: func(c *cli.Context) error {
+						scList(c.Parent().Parent().Int("idx"), c.Args().First())
+						return nil
+					},
+				},
+			},
+		},
 	},
 }
 
@@ -135,4 +193,49 @@ func exportPolicies(idx int) {
 	}
 
 	fmt.Println(string(json))
+}
+
+func scCreate(idx int) {
+	app, repo, token := "", "", ""
+	iq := demo.IQ(idx)
+	err := nexusiq.CreateSourceControlEntry(iq, app, repo, token)
+	if err != nil {
+		panic(err)
+	}
+
+	entry, err := nexusiq.GetSourceControlEntry(iq, app)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%q\n", entry)
+}
+
+func scDelete(idx int) {
+	app, id := "", ""
+	nexusiq.DeleteSourceControlEntry(demo.IQ(idx), app, id)
+}
+
+func scList(idx int, appID string) {
+	/*
+		appIDPtr := listCmd.String("app", "", "The identifier of the application in IQ")
+
+		listCmd.Parse(os.Args[2:])
+
+		if *appIDPtr != "" {
+			entry, _ := get(iq, *appIDPtr)
+			fmt.Printf("%v\n", entry)
+		} else {
+			log.Println("listing all entries...")
+			apps, err := nexusiq.GetAllApplications(iq)
+			if err != nil {
+				panic(err)
+			}
+			for _, app := range apps {
+				if entry, err := get(iq, app.PublicID); err == nil {
+					fmt.Printf("%s: %v\n", app.PublicID, entry)
+				}
+			}
+		}
+	*/
 }
