@@ -153,6 +153,20 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:    "remediation",
+			Aliases: []string{"rem"},
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "app, a"},
+				cli.StringFlag{Name: "org, o"},
+				cli.StringFlag{Name: "stage, s", Value: "build"},
+				cli.StringFlag{Name: "format, f"},
+			},
+			Action: func(c *cli.Context) error {
+				remediation(c.Parent().Int("idx"), c.String("format"), c.String("stage"), c.String("app"), c.String("org"), c.Args().First())
+				return nil
+			},
+		},
 	},
 }
 
@@ -269,5 +283,34 @@ func appReport(idx int, format string, apps ...string) {
 
 			fmt.Println(string(json))
 		}
+	}
+}
+
+func remediation(idx int, format, stage, app, org, comp string) {
+	c, _ := nexusiq.NewComponentFromString(comp)
+	var err error
+	var remediation nexusiq.Remediation
+	switch {
+	case app != "":
+		remediation, err = nexusiq.GetRemediationByApp(demo.IQ(idx), *c, stage, app)
+	case org != "":
+		remediation, err = nexusiq.GetRemediationByOrg(demo.IQ(idx), *c, stage, org)
+	default:
+		panic("Need either an app or an org")
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	if format != "" {
+		tmpl := template.Must(template.New("remediation").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+		tmpl.Execute(os.Stdout, remediation)
+	} else {
+		json, err := json.MarshalIndent(remediation, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(string(json))
 	}
 }
