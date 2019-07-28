@@ -1,9 +1,6 @@
-github.com/hokiegeek/gonexus v0.5.0/go.mod h1:hxA5O/9PtcsWdeJkXbhgDd/RPPltBxHJ7yDupmpws/E=
-github.com/hokiegeek/gonexus v0.17.0 h1:N7fkg/yuH259Ul/nQze7lULoAHGl2bMFzzxI91x1Oww=
-github.com/hokiegeek/gonexus v0.17.0/go.mod h1:hxA5O/9PtcsWdeJkXbhgDd/RPPltBxHJ7yDupmpws/E=
-github.com/hokiegeek/gonexus-private v0.1.0 h1:S6kRfOe9Xv84/YOx8A8bzzQaR6SL04ZcHQoBtZDUkpM=
-github.com/hokiegeek/gonexus-private v0.1.0/go.mod h1:kS8IWJbGrffWOXPJhpAKzsVRGFzMigd/UQnL10IZsCY=
-github.com/hokiegeek/gonexus-private v0.2.0 h1:oqgqWBcc4e/AdcENbJxGDTsm8uc6MYZupnmrjXHAYuA=
-github.com/hokiegeek/gonexus-private v0.2.0/go.mod h1:aax9GRw4d3jby7DktSehYErq626A+sn7bxxvjup6Tj8=
+github.com/hokiegeek/gonexus-private v0.2.1 h1:/hVT+eF3QeIeHzciWUxuXq82FzXdAWKpaZ3Gwq3XQOc=
+github.com/hokiegeek/gonexus-private v0.2.1/go.mod h1:qrHUSiUHO8IGXMxFDewrmtFtsjpEETeMVgWbWcssTN0=
+github.com/sonatype-nexus-community/gonexus v0.26.0 h1:MgbwWWX43HcrGcL3sIeg+hhRlUxmGRvs3cVhX/Z7wc0=
+github.com/sonatype-nexus-community/gonexus v0.26.0/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
 github.com/urfave/cli v1.20.0 h1:fDqGv3UG/4jbVl/QkFwEdddtEDjh/5Ov6X+0B/3bPaw=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
