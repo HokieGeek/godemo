@@ -9,10 +9,9 @@ import (
 	"sync"
 	"time"
 
-	nexus "github.com/sonatype-nexus-community/gonexus"
-	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
-	nexusrm "github.com/sonatype-nexus-community/gonexus/rm"
-
+	"github.com/sonatype-nexus-community/gonexus"
+	"github.com/sonatype-nexus-community/gonexus/iq"
+	"github.com/sonatype-nexus-community/gonexus/rm"
 	// "github.com/hokiegeek/gonexus-private/iq"
 )
 
@@ -27,6 +26,11 @@ const (
 	defaultRMPass = "admin123"
 	defaultIQUser = "admin"
 	defaultIQPass = "admin123"
+
+	defaultRMPort = 8081
+	defaultIQPort = 8070
+
+	detectionHost = "http://localhost"
 )
 
 type identifiedServer struct {
@@ -128,18 +132,23 @@ func detectServers(host string, sniff func(string, http.Header)) {
 
 // DetectRMServers returns all instances of Repository Manager detected on the local machine
 func DetectRMServers() (servers []IdentifiedRM) {
-	host := "http://localhost"
-
 	found := make(chan string, 10)
-	detectServers(host, func(url string, headers http.Header) {
+	detectServers(detectionHost, func(url string, headers http.Header) {
 		if v, ok := headers["Server"]; ok && strings.HasPrefix(v[0], "Nexus") {
 			found <- url
 		}
 	})
 	close(found)
 
+	portSuffix := fmt.Sprintf(":%d", defaultRMPort)
 	for url := range found {
-		servers = append(servers, NewIdentifiedRM(url, defaultRMUser, defaultRMPass))
+		if strings.HasSuffix(url, portSuffix) {
+			rms := []IdentifiedRM{NewIdentifiedRM(url, defaultRMUser, defaultRMPass)}
+			rms = append(rms, servers...)
+			servers = rms
+		} else {
+			servers = append(servers, NewIdentifiedRM(url, defaultRMUser, defaultRMPass))
+		}
 	}
 
 	return
@@ -147,18 +156,23 @@ func DetectRMServers() (servers []IdentifiedRM) {
 
 // DetectIQServers returns all instances of IQ detected on the local machine
 func DetectIQServers() (servers []IdentifiedIQ) {
-	host := "http://localhost"
-
 	found := make(chan string, 10)
-	detectServers(host, func(url string, headers http.Header) {
+	detectServers(detectionHost, func(url string, headers http.Header) {
 		if v, ok := headers["Set-Cookie"]; ok && strings.HasPrefix(v[0], "CLM-CSRF-TOKEN") {
 			found <- url
 		}
 	})
 	close(found)
 
+	portSuffix := fmt.Sprintf(":%d", defaultIQPort)
 	for url := range found {
-		servers = append(servers, NewIdentifiedIQ(url, defaultIQUser, defaultIQPass))
+		if strings.HasSuffix(url, portSuffix) {
+			iqs := []IdentifiedIQ{NewIdentifiedIQ(url, defaultIQUser, defaultIQPass)}
+			iqs = append(iqs, servers...)
+			servers = iqs
+		} else {
+			servers = append(servers, NewIdentifiedIQ(url, defaultIQUser, defaultIQPass))
+		}
 	}
 
 	return
