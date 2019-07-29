@@ -23,6 +23,23 @@ var rmCommand = cli.Command{
 			Value: 0,
 			Usage: "rm `idx`",
 		},
+		cli.StringFlag{
+			Name:  "server, s",
+			Value: "http://localhost:8081",
+		},
+		cli.StringFlag{
+			Name:  "auth, a",
+			Value: "admin:admin123",
+		},
+	},
+	Before: func(c *cli.Context) error {
+		host := c.String("server")
+		auth := strings.Split(c.String("auth"), ":")
+		if host != "" && len(auth) == 2 {
+			log.Printf("Connecting to %s\n", host)
+			demo.RMs = []demo.IdentifiedRM{demo.NewIdentifiedRM(host, auth[0], auth[1])}
+		}
+		return nil
 	},
 	Action: func(c *cli.Context) error {
 		rmStatus(c.Int("idx"))
@@ -142,7 +159,7 @@ func rmListRepos(idx int) {
 	w := csv.NewWriter(os.Stdout)
 
 	w.Write([]string{"Name", "Format", "Type", "URL"})
-	if repos, err := demo.Repos(idx); err == nil {
+	if repos, err := nexusrm.GetRepositories(demo.RM(idx)); err == nil {
 		for _, r := range repos {
 			w.Write([]string{r.Name, r.Format, r.Type, r.URL})
 		}
@@ -160,14 +177,14 @@ func rmListRepoComponents(idx int, repos []string) {
 
 	w.Write([]string{"Repository", "Group", "Name", "Version", "Tags"})
 	if len(repos) == 0 {
-		all, _ := demo.Repos(idx)
+		all, _ := nexusrm.GetRepositories(demo.RM(idx))
 		for _, r := range all {
 			repos = append(repos, r.Name)
 		}
 	}
 
 	for _, repo := range repos {
-		if components, err := demo.Components(idx, repo); err == nil {
+		if components, err := nexusrm.GetComponents(demo.RM(idx), repo); err == nil {
 			for _, c := range components {
 				w.Write([]string{c.Repository, c.Group, c.Name, c.Version, strings.Join(c.Tags, ";")})
 			}

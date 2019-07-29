@@ -6,21 +6,17 @@ import (
 	"github.com/sonatype-nexus-community/gonexus/rm"
 )
 
-const (
-	defaultRMUser = "admin"
-	defaultRMPass = "admin123"
-	defaultIQUser = "admin"
-	defaultIQPass = "admin123"
-)
-
 // RM returns an instance of Repository Manager with demo defaults
 func RM(idx int) nexusrm.RM {
-	return RMs[idx].Auth(defaultRMUser, defaultRMPass).Client()
+	if len(RMs) == 0 {
+		RMs = DetectRMServers()
+	}
+	return RMs[idx].Client()
 }
 
 // IQ returns an instance of IQ Server with demo defaults
 func IQ(idx int) nexusiq.IQ {
-	return IQs[idx].Auth(defaultIQUser, defaultIQPass).Client()
+	return IQs[idx].Client()
 }
 
 // Repos returns a list of all of the repositories in the demo RM

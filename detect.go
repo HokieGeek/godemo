@@ -9,69 +9,81 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sonatype-nexus-community/gonexus"
+	nexus "github.com/sonatype-nexus-community/gonexus"
+	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
+	nexusrm "github.com/sonatype-nexus-community/gonexus/rm"
+
 	// "github.com/hokiegeek/gonexus-private/iq"
-	"github.com/sonatype-nexus-community/gonexus/iq"
-	"github.com/sonatype-nexus-community/gonexus/rm"
 )
 
 // These variables contain the detected servers
 var (
-	RMs []DetectedRM
-	IQs []DetectedIQ
+	RMs []IdentifiedRM
+	IQs []IdentifiedIQ
 )
 
-type detectedServer struct {
+const (
+	defaultRMUser = "admin"
+	defaultRMPass = "admin123"
+	defaultIQUser = "admin"
+	defaultIQPass = "admin123"
+)
+
+type identifiedServer struct {
 	nexus.ServerInfo
 }
 
-func (d *detectedServer) auth(username, password string) *detectedServer {
+func (d *identifiedServer) auth(username, password string) *identifiedServer {
 	d.Username = username
 	d.Password = password
 	return d
 }
 
-// DetectedRM provides a helper for a found RM instance
-type DetectedRM struct {
-	detectedServer
+// IdentifiedRM provides a helper for a found RM instance
+type IdentifiedRM struct {
+	identifiedServer
 }
 
-// Auth adds username and password to the detected thingy
-func (d *DetectedRM) Auth(username, password string) *DetectedRM {
+// Auth adds username and password to the identified thingy
+func (d *IdentifiedRM) Auth(username, password string) *IdentifiedRM {
 	d.auth(username, password)
 	return d
 }
 
 // Client returns a client of this RM instance
-func (d DetectedRM) Client() nexusrm.RM {
+func (d IdentifiedRM) Client() nexusrm.RM {
 	rm, _ := nexusrm.New(d.Host, d.Username, d.Password)
 	return rm
 }
 
-// DetectedIQ provides a helper for a found ÍQ instance
-type DetectedIQ struct {
-	detectedServer
+// IdentifiedIQ provides a helper for a found ÍQ instance
+type IdentifiedIQ struct {
+	identifiedServer
 }
 
 // Client returns a client of this IQ instance
-func (d DetectedIQ) Client() nexusiq.IQ {
+func (d IdentifiedIQ) Client() nexusiq.IQ {
 	iq, _ := nexusiq.New(d.Host, d.Username, d.Password)
 	return iq
 }
 
-// Auth adds username and password to the detected thingy
-func (d *DetectedIQ) Auth(username, password string) *DetectedIQ {
+// Auth adds username and password to the identified thingy
+func (d *IdentifiedIQ) Auth(username, password string) *IdentifiedIQ {
 	d.auth(username, password)
 	return d
 }
 
-func newDetectedRM(host string) (rm DetectedRM) {
+// NewIdentifiedRM creates a new instance of a IdentifiedRM
+func NewIdentifiedRM(host, username, password string) (rm IdentifiedRM) {
 	rm.Host = host
+	rm.auth(username, password)
 	return
 }
 
-func newDetectedIQ(host string) (iq DetectedIQ) {
+// NewIdentifiedIQ creates a new instance of a IdentifiedIQ
+func NewIdentifiedIQ(host, username, password string) (iq IdentifiedIQ) {
 	iq.Host = host
+	iq.auth(username, password)
 	return
 }
 
@@ -115,7 +127,7 @@ func detectServers(host string, sniff func(string, http.Header)) {
 }
 
 // DetectRMServers returns all instances of Repository Manager detected on the local machine
-func DetectRMServers() (servers []DetectedRM) {
+func DetectRMServers() (servers []IdentifiedRM) {
 	host := "http://localhost"
 
 	found := make(chan string, 10)
@@ -127,14 +139,14 @@ func DetectRMServers() (servers []DetectedRM) {
 	close(found)
 
 	for url := range found {
-		servers = append(servers, newDetectedRM(url))
+		servers = append(servers, NewIdentifiedRM(url, defaultRMUser, defaultRMPass))
 	}
 
 	return
 }
 
 // DetectIQServers returns all instances of IQ detected on the local machine
-func DetectIQServers() (servers []DetectedIQ) {
+func DetectIQServers() (servers []IdentifiedIQ) {
 	host := "http://localhost"
 
 	found := make(chan string, 10)
@@ -146,14 +158,14 @@ func DetectIQServers() (servers []DetectedIQ) {
 	close(found)
 
 	for url := range found {
-		servers = append(servers, newDetectedIQ(url))
+		servers = append(servers, NewIdentifiedIQ(url, defaultIQUser, defaultIQPass))
 	}
 
 	return
 }
 
 // Detect populates globals and returns any IQ and RM servers found on the machine
-func Detect() ([]DetectedRM, []DetectedIQ) {
+func Detect() ([]IdentifiedRM, []IdentifiedIQ) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 

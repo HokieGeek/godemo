@@ -16,9 +16,12 @@ var tmplJSONPretty = func(v interface{}) string {
 }
 
 func listServers() {
+	demo.Detect()
+
 	for i, s := range demo.RMs {
 		fmt.Printf("RM[%d]: %s\n", i, s.Host)
 	}
+
 	for i, s := range demo.IQs {
 		fmt.Printf("IQ[%d]: %s\n", i, s.Host)
 	}
@@ -45,12 +48,6 @@ func main() {
 	}
 
 	app.Action = defaultAction
-
-	app.Before = func(c *cli.Context) error {
-		log.Println("Discovering Nexus servers...")
-		demo.Detect()
-		return nil
-	}
 
 	err := app.Run(os.Args)
 	if err != nil {

@@ -24,6 +24,23 @@ var iqCommand = cli.Command{
 			Value: 0,
 			Usage: "iq `idx`",
 		},
+		cli.StringFlag{
+			Name:  "server, s",
+			Value: "http://localhost:8070",
+		},
+		cli.StringFlag{
+			Name:  "auth, a",
+			Value: "admin:admin123",
+		},
+	},
+	Before: func(c *cli.Context) error {
+		host := c.String("server")
+		auth := strings.Split(c.String("auth"), ":")
+		if host != "" && len(auth) == 2 {
+			log.Printf("Connecting to %s\n", host)
+			demo.IQs = []demo.IdentifiedIQ{demo.NewIdentifiedIQ(host, auth[0], auth[1])}
+		}
+		return nil
 	},
 	Subcommands: []cli.Command{
 		{
@@ -182,7 +199,7 @@ func iqListApps(idx int) {
 
 func iqListOrgs(idx int) {
 	fmt.Printf("%s, %s\n", "Name", "ID")
-	if orgs, err := demo.Orgs(idx); err == nil {
+	if orgs, err := nexusiq.GetAllOrganizations(demo.RM(idx)); err == nil {
 		for _, o := range orgs {
 			fmt.Printf("%s, %s\n", o.Name, o.ID)
 		}
