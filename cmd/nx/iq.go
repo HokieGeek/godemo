@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"text/template"
 
-	"github.com/hokiegeek/godemo"
-	"github.com/hokiegeek/gonexus-private/iq"
-	"github.com/sonatype-nexus-community/gonexus/iq"
+	demo "github.com/hokiegeek/godemo"
+	privateiq "github.com/hokiegeek/gonexus-private/iq"
+	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
 	"github.com/urfave/cli"
 )
 
@@ -184,6 +185,46 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:    "license",
+			Aliases: []string{"lic"},
+			Action: func(c *cli.Context) error {
+				installLicense(c.Parent().Int("idx"), c.Args().First())
+				return nil
+			},
+		},
+		{
+			Name:  "zip",
+			Usage: "get support zip",
+			Action: func(c *cli.Context) error {
+				iqZip(c.Parent().Int("idx"))
+				return nil
+			},
+		},
+		{
+			Name:    "webhook",
+			Aliases: []string{"wh"},
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "secret, s"},
+				cli.StringFlag{Name: "url, u"},
+				cli.StringFlag{Name: "events, e", Value: "Application Evaluation"},
+			},
+			Action: func(c *cli.Context) error {
+				webhook(c.Parent().Int("idx"), c.String("url"), c.String("secret"), c.String("events"))
+				return nil
+			},
+		},
+		{
+			Name:    "auto-apps",
+			Aliases: []string{"auto"},
+			Flags: []cli.Flag{
+				cli.BoolFlag{Name: "disable, d"},
+			},
+			Action: func(c *cli.Context) error {
+				autoApps(c.Parent().Int("idx"), c.Bool("disable"), c.Args().First())
+				return nil
+			},
+		},
 	},
 }
 
@@ -329,5 +370,56 @@ func remediation(idx int, format, stage, app, org, comp string) {
 		}
 
 		fmt.Println(string(json))
+	}
+}
+
+func iqZip(idx int) {
+	zip, name, err := privateiq.GetSupportZip(demo.IQ(idx))
+	if err != nil {
+		panic(err)
+	}
+
+	if err = ioutil.WriteFile(name, zip, 0644); err != nil {
+		panic(err)
+	}
+
+	log.Printf("Created %s\n", name)
+}
+
+func installLicense(idx int, licensePath string) {
+	license, err := os.Open(licensePath)
+	if err != nil {
+		panic(err)
+	}
+
+	err = privateiq.InstallLicense(demo.IQ(idx), license)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println("Installed license")
+}
+
+func webhook(idx int, url, secret, events string) {
+	err := privateiq.CreateWebhook(demo.IQ(idx), url, secret, strings.Split(events, ","))
+	if err != nil {
+		panic(err)
+	}
+	log.Println("Created webhook")
+}
+
+func autoApps(idx int, disable bool, orgName string) {
+	if disable {
+		err := privateiq.DisableAutomaticApplications(demo.IQ(idx))
+		if err != nil {
+			panic(err)
+		}
+		log.Println("Disabled automatic applications")
+	} else {
+		err := privateiq.EnableAutomaticApplications(demo.IQ(idx), orgName)
+		if err != nil {
+			panic(err)
+		}
+		log.Println("Enabled automatic applications")
 	}
 }
