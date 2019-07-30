@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -76,18 +78,10 @@ var iqCommand = cli.Command{
 			},
 		},
 		{
-			Name:  "policies",
-			Usage: "Do stuff with policies",
+			Name:    "policies",
+			Aliases: []string{"pol", "p"},
+			Usage:   "Do stuff with policies",
 			Subcommands: []cli.Command{
-				{
-					Name:    "export",
-					Aliases: []string{"a"},
-					Usage:   "exports the policies of the indicated IQ",
-					Action: func(c *cli.Context) error {
-						exportPolicies(c.Parent().Int("idx"))
-						return nil
-					},
-				},
 				/*
 					{
 						Name:    "import",
@@ -99,6 +93,24 @@ var iqCommand = cli.Command{
 						},
 					},
 				*/
+				{
+					Name:    "export",
+					Aliases: []string{"a"},
+					Usage:   "exports the policies of the indicated IQ",
+					Action: func(c *cli.Context) error {
+						exportPolicies(c.Parent().Int("idx"))
+						return nil
+					},
+				},
+				{
+					Name:    "list",
+					Aliases: []string{"ls, l"},
+					Usage:   "Lists all policies configured on the instance",
+					Action: func(c *cli.Context) error {
+						listPolicies(c.Parent().Int("idx"))
+						return nil
+					},
+				},
 			},
 		},
 		{
@@ -225,6 +237,14 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:  "violations",
+			Usage: "List violations by policy name",
+			Action: func(c *cli.Context) error {
+				listViolatingApps(c.Parent().Int("idx"), c.Args()...)
+				return nil
+			},
+		},
 	},
 }
 
@@ -278,6 +298,23 @@ func exportPolicies(idx int) {
 	}
 
 	fmt.Println(string(json))
+}
+
+func listPolicies(idx int) {
+	w := csv.NewWriter(os.Stdout)
+
+	w.Write([]string{"Name", "PolicyType", "ThreatLevel", "OwnerID", "OwnerType", "ID"})
+	if policies, err := nexusiq.GetPolicies(demo.IQ(idx)); err == nil {
+		for _, p := range policies {
+			w.Write([]string{p.Name, p.PolicyType, strconv.Itoa(p.ThreatLevel), p.OwnerID, p.OwnerType, p.ID})
+		}
+	}
+
+	w.Flush()
+
+	if err := w.Error(); err != nil {
+		panic(err)
+	}
 }
 
 func scCreate(idx int) {
@@ -422,4 +459,19 @@ func autoApps(idx int, disable bool, orgName string) {
 		}
 		log.Println("Enabled automatic applications")
 	}
+}
+
+func listViolatingApps(idx int, policyNames ...string) {
+	var violations []nexusiq.ApplicationViolation
+	var err error
+	if len(policyNames) > 0 {
+		violations, err = nexusiq.GetPolicyViolationsByName(demo.IQ(idx), policyNames...)
+	} else {
+		violations, err = nexusiq.GetAllPolicyViolations(demo.IQ(idx))
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(violations)
 }
