@@ -245,6 +245,18 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:    "notice",
+			Aliases: []string{"msg"},
+			Flags: []cli.Flag{
+				cli.BoolFlag{Name: "disable, d"},
+			},
+			Usage: "Set a message in IQ",
+			Action: func(c *cli.Context) error {
+				systemNotice(c.Parent().Int("idx"), c.Bool("disable"), strings.Join(c.Args(), " "))
+				return nil
+			},
+		},
 	},
 }
 
@@ -474,4 +486,16 @@ func listViolatingApps(idx int, policyNames ...string) {
 	}
 
 	fmt.Println(violations)
+}
+
+func systemNotice(idx int, disable bool, message string) {
+	var err error
+	if disable {
+		err = privateiq.DisableNotice(demo.IQ(idx))
+	} else {
+		err = privateiq.EnableNotice(demo.IQ(idx), message)
+	}
+	if err != nil {
+		panic(err)
+	}
 }
