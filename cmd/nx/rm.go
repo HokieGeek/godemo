@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hokiegeek/godemo"
-	"github.com/sonatype-nexus-community/gonexus/rm"
+	demo "github.com/hokiegeek/godemo"
+	nexusrm "github.com/sonatype-nexus-community/gonexus/rm"
 	"github.com/urfave/cli"
 )
 
@@ -98,7 +98,7 @@ var rmCommand = cli.Command{
 			Name:  "ro",
 			Usage: "read-only mode functions",
 			Action: func(c *cli.Context) error {
-				demo.RmReadOnlyToggle(c.Parent().Int("idx"))
+				rmReadOnlyToggle(c.Parent().Int("idx"))
 				rmStatus(c.Parent().Int("idx"))
 				return nil
 			},
@@ -108,7 +108,7 @@ var rmCommand = cli.Command{
 					Aliases: []string{"e"},
 					Usage:   "enables read-only mode",
 					Action: func(c *cli.Context) error {
-						demo.RmReadOnly(c.Parent().Parent().Int("idx"), true, false)
+						rmReadOnly(c.Parent().Parent().Int("idx"), true, false)
 						rmStatus(c.Parent().Int("idx"))
 						return nil
 					},
@@ -121,7 +121,7 @@ var rmCommand = cli.Command{
 						cli.BoolFlag{Name: "force, f"},
 					},
 					Action: func(c *cli.Context) error {
-						demo.RmReadOnly(c.Parent().Parent().Int("idx"), false, c.Bool("force"))
+						rmReadOnly(c.Parent().Parent().Int("idx"), false, c.Bool("force"))
 						rmStatus(c.Parent().Int("idx"))
 						return nil
 					},
@@ -240,4 +240,24 @@ func rmZip(idx int) {
 	}
 
 	log.Printf("Created %s\n", name)
+}
+
+func rmReadOnly(idx int, enable, forceRelease bool) {
+	if enable {
+		nexusrm.ReadOnlyEnable(demo.RM(idx))
+	} else {
+		nexusrm.ReadOnlyRelease(demo.RM(idx), forceRelease)
+	}
+}
+
+func rmReadOnlyToggle(idx int) {
+	state, err := nexusrm.GetReadOnlyState(demo.RM(idx))
+	if err != nil {
+		return
+	}
+	if state.Frozen {
+		rmReadOnly(idx, false, false)
+	} else {
+		rmReadOnly(idx, true, false)
+	}
 }
