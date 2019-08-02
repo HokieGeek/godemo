@@ -124,39 +124,22 @@ var iqCommand = cli.Command{
 				{
 					Name:    "create",
 					Aliases: []string{"c"},
-					Usage:   "creates a source control entry",
+					Usage:   "create <appId> <repositoryUrl> <accessToken>",
 					Action: func(c *cli.Context) error {
-						/*
-							appIDPtr := createCmd.String("app", "", "The identifier of the application in IQ")
-							repoPtr := createCmd.String("repo", "", "The repo")
-							tokenPtr := createCmd.String("token", "", "SC Token")
-						*/
-						scCreate(c.Parent().Parent().Int("idx"))
+						scCreate(c.Parent().Parent().Int("idx"), c.Args()...)
 						return nil
 					},
 				},
 				{
 					Name:    "delete",
 					Aliases: []string{"d"},
-					Usage:   "deletes a source control entry",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "app, a"},
+						cli.StringFlag{Name: "id, i"},
+					},
+					Usage: "deletes a source control entry",
 					Action: func(c *cli.Context) error {
-						/*
-							appIDPtr := deleteCmd.String("app", "", "The identifier of the application in IQ")
-							entryPtr := deleteCmd.String("entry", "", "The ID of the SC entry")
-
-							deleteCmd.Parse(os.Args[2:])
-
-							var scEntryID string
-							if *entryPtr != "" {
-								scEntryID = *entryPtr
-							} else {
-								scEntry, _ := get(iq, *appIDPtr)
-								scEntryID = scEntry.ID
-							}
-
-							del(iq, *appIDPtr, scEntryID)
-						*/
-						scDelete(c.Parent().Parent().Int("idx"))
+						scDelete(c.Parent().Parent().Int("idx"), c.String("app"), c.String("id"))
 						return nil
 					},
 				},
@@ -181,6 +164,17 @@ var iqCommand = cli.Command{
 			Action: func(c *cli.Context) error {
 				appReport(c.Parent().Int("idx"), c.String("format"), c.Args()...)
 				return nil
+			},
+			Subcommands: []cli.Command{
+				{
+					Name:    "reevaluate",
+					Aliases: []string{"rv"},
+					Usage:   "reevaluate [appID:stage] [appID:stage] [appID]",
+					Action: func(c *cli.Context) error {
+						reportReevaluate(c.Parent().Parent().Int("idx"), c.Args()...)
+						return nil
+					},
+				},
 			},
 		},
 		{
@@ -257,6 +251,52 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:    "search",
+			Aliases: []string{"q"},
+			Action: func(c *cli.Context) error {
+				iqSearch(c.Parent().Int("idx"), c.Args())
+				return nil
+			},
+		},
+		{
+			Name: "retention",
+			Action: func(c *cli.Context) error {
+				retentionList(c.Parent().Int("idx"), c.Args().First())
+				return nil
+			},
+			Subcommands: []cli.Command{
+				{
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action: func(c *cli.Context) error {
+						retentionList(c.Parent().Parent().Int("idx"), c.Args().First())
+						return nil
+					},
+				},
+			},
+		},
+		{
+			Name: "role",
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "app, a"},
+				cli.StringFlag{Name: "org, o"},
+			},
+			Action: func(c *cli.Context) error {
+				rolesList(c.Parent().Int("idx"), c.String("app"), c.String("org"))
+				return nil
+			},
+			Subcommands: []cli.Command{
+				{
+					Name:    "user",
+					Aliases: []string{"user"},
+					Action: func(c *cli.Context) error {
+						retentionList(c.Parent().Int("idx"), c.Args().First())
+						return nil
+					},
+				},
+			},
+		},
 	},
 }
 
@@ -329,8 +369,8 @@ func listPolicies(idx int) {
 	}
 }
 
-func scCreate(idx int) {
-	app, repo, token := "", "", ""
+func scCreate(idx int, args ...string) {
+	app, repo, token := args[0], args[1], args[2]
 	iq := demo.IQ(idx)
 	err := nexusiq.CreateSourceControlEntry(iq, app, repo, token)
 	if err != nil {
@@ -345,9 +385,22 @@ func scCreate(idx int) {
 	fmt.Printf("%q\n", entry)
 }
 
-func scDelete(idx int) {
-	app, id := "", ""
-	nexusiq.DeleteSourceControlEntry(demo.IQ(idx), app, id)
+func scDelete(idx int, appID, entryID string) {
+	iq := demo.IQ(idx)
+	var scEntryID string
+	if entryID != "" {
+		scEntryID = entryID
+	} else {
+		scEntry, err := nexusiq.GetSourceControlEntry(iq, appID)
+		if err != nil {
+			panic(err)
+		}
+		scEntryID = scEntry.ID
+	}
+
+	nexusiq.DeleteSourceControlEntry(iq, appID, scEntryID)
+
+	fmt.Println("Deleted")
 }
 
 func scList(idx int, appID string) {
@@ -389,6 +442,25 @@ func appReport(idx int, format string, apps ...string) {
 			}
 
 			fmt.Println(string(json))
+		}
+	}
+}
+
+func reportReevaluate(idx int, apps ...string) {
+	if len(apps) == 0 {
+		if err := privateiq.ReevaluateAllReports(demo.IQ(idx)); err != nil {
+			log.Printf("could not re-evaluate reports: %v", err)
+		}
+		return
+	}
+
+	for _, app := range apps {
+		splitPos := strings.LastIndex(app, ":")
+		appID := app[:splitPos]
+		stage := app[splitPos+1:]
+
+		if err := privateiq.ReevaluateReport(demo.IQ(idx), appID, stage); err != nil {
+			log.Printf("could not re-evaluate report for '%s' at '%s' stage: %v", appID, stage, err)
 		}
 	}
 }
@@ -498,4 +570,77 @@ func systemNotice(idx int, disable bool, message string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func iqSearch(idx int, criteria []string) {
+	query := nexusiq.NewSearchQueryBuilder()
+	for _, c := range criteria {
+		key := strings.Split(c, "=")[0]
+		val := strings.Split(c, "=")[1]
+		switch key {
+		case "stage":
+			query = query.Stage(val)
+		case "hash":
+			query = query.Hash(val)
+		case "format":
+			query = query.Format(val)
+		case "purl":
+			query = query.PackageURL(val)
+			/*
+						case "coord":
+							var c nexusiq.Coordinates
+							if err := json.Unmarshal([]byte(val), &c); err != nil {
+								panic(err)
+							}
+							query = query.Coordinates(c)
+				case "id":
+					var c nexusiq.ComponentIdentifier
+					if err := json.Unmarshal([]byte(val), &c); err != nil {
+						panic(err)
+					}
+					query = query.ComponentIdentifier(c)
+			*/
+		}
+	}
+
+	components, err := nexusiq.SearchComponents(demo.IQ(idx), query)
+	if err != nil {
+		log.Fatalf("Did not complete search: %v", err)
+	}
+
+	fmt.Printf("%q\n", components)
+}
+
+func retentionList(idx int, org string) {
+	policies, err := nexusiq.GetRetentionPolicies(demo.IQ(idx), org)
+	if err != nil {
+		panic(err)
+	}
+
+	buf, err := json.MarshalIndent(policies, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(buf))
+}
+
+func rolesList(idx int, app, org string) {
+	var mappings []nexusiq.MemberMapping
+	if app != "" && org == "" {
+		panic("TODO")
+	}
+
+	if org != "" {
+		var err error
+		mappings, err = nexusiq.OrganizationAuthorizations(demo.IQ(idx), org)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	buf, err := json.MarshalIndent(mappings, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(buf))
 }
