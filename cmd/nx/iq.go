@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -48,6 +46,7 @@ var iqCommand = cli.Command{
 	},
 	Subcommands: []cli.Command{
 		iqScCommand,
+		iqPoliciesCommand,
 		{
 			Name:    "app",
 			Aliases: []string{"a"},
@@ -77,42 +76,6 @@ var iqCommand = cli.Command{
 			Action: func(c *cli.Context) error {
 				iqEvaluate(c.Parent().Int("idx"), c.String("app"), c.String("format"), c.Args())
 				return nil
-			},
-		},
-		{
-			Name:    "policies",
-			Aliases: []string{"pol", "p"},
-			Usage:   "Do stuff with policies",
-			Subcommands: []cli.Command{
-				/*
-					{
-						Name:    "import",
-						Aliases: []string{"i"},
-						Usage:   "Import the indicated policies",
-						Action: func(c *cli.Context) error {
-							// iqListOrgs(c.Parent().Int("idx"))
-							return nil
-						},
-					},
-				*/
-				{
-					Name:    "export",
-					Aliases: []string{"a"},
-					Usage:   "exports the policies of the indicated IQ",
-					Action: func(c *cli.Context) error {
-						exportPolicies(c.Parent().Int("idx"))
-						return nil
-					},
-				},
-				{
-					Name:    "list",
-					Aliases: []string{"ls, l"},
-					Usage:   "Lists all policies configured on the instance",
-					Action: func(c *cli.Context) error {
-						listPolicies(c.Parent().Int("idx"))
-						return nil
-					},
-				},
 			},
 		},
 		{
@@ -146,6 +109,7 @@ var iqCommand = cli.Command{
 				cli.StringFlag{Name: "org, o"},
 				cli.StringFlag{Name: "stage, s", Value: "build"},
 				cli.StringFlag{Name: "format, f"},
+				// cli.StringFlag{Name: "report, r"},
 			},
 			Action: func(c *cli.Context) error {
 				remediation(c.Parent().Int("idx"), c.String("format"), c.String("stage"), c.String("app"), c.String("org"), c.Args().First())
@@ -258,6 +222,13 @@ var iqCommand = cli.Command{
 				},
 			},
 		},
+		{
+			Name: "vulns",
+			Action: func(c *cli.Context) error {
+				iqVulnInfo(c.Parent().Int("idx"), c.Args()...)
+				return nil
+			},
+		},
 	},
 }
 
@@ -296,37 +267,6 @@ func iqEvaluate(idx int, app, format string, components []string) {
 		}
 
 		fmt.Println(string(json))
-	}
-}
-
-func exportPolicies(idx int) {
-	policies, err := privateiq.ExportPolicies(demo.IQ(idx))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	json, err := json.MarshalIndent(policies, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(string(json))
-}
-
-func listPolicies(idx int) {
-	w := csv.NewWriter(os.Stdout)
-
-	w.Write([]string{"Name", "PolicyType", "ThreatLevel", "OwnerID", "OwnerType", "ID"})
-	if policies, err := nexusiq.GetPolicies(demo.IQ(idx)); err == nil {
-		for _, p := range policies {
-			w.Write([]string{p.Name, p.PolicyType, strconv.Itoa(p.ThreatLevel), p.OwnerID, p.OwnerType, p.ID})
-		}
-	}
-
-	w.Flush()
-
-	if err := w.Error(); err != nil {
-		panic(err)
 	}
 }
 
@@ -552,4 +492,27 @@ func rolesList(idx int, app, org string) {
 		panic(err)
 	}
 	fmt.Println(string(buf))
+}
+
+func iqVulnInfo(idx int, ids ...string) {
+	iq := demo.IQ(idx)
+
+	type catcher struct {
+		id  string
+		err error
+	}
+
+	errs := make([]catcher, 0)
+	for _, id := range ids {
+		info, err := privateiq.VulnerabilityInfoHTML(iq, id)
+		if err != nil {
+			errs = append(errs, catcher{id, err})
+			continue
+		}
+		fmt.Println(info)
+	}
+
+	for _, e := range errs {
+		log.Printf("error with %s: %v\n", e.id, e.err)
+	}
 }
