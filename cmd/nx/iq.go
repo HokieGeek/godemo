@@ -11,10 +11,11 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/urfave/cli"
+
 	demo "github.com/hokiegeek/godemo"
 	privateiq "github.com/hokiegeek/gonexus-private/iq"
 	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
-	"github.com/urfave/cli"
 )
 
 var iqCommand = cli.Command{
@@ -46,6 +47,7 @@ var iqCommand = cli.Command{
 		return nil
 	},
 	Subcommands: []cli.Command{
+		iqScCommand,
 		{
 			Name:    "app",
 			Aliases: []string{"a"},
@@ -108,47 +110,6 @@ var iqCommand = cli.Command{
 					Usage:   "Lists all policies configured on the instance",
 					Action: func(c *cli.Context) error {
 						listPolicies(c.Parent().Int("idx"))
-						return nil
-					},
-				},
-			},
-		},
-		{
-			Name:  "sc",
-			Usage: "source control actions",
-			Action: func(c *cli.Context) error {
-				scList(c.Parent().Int("idx"), "")
-				return nil
-			},
-			Subcommands: []cli.Command{
-				{
-					Name:    "create",
-					Aliases: []string{"c"},
-					Usage:   "create <appId> <repositoryUrl> <accessToken>",
-					Action: func(c *cli.Context) error {
-						scCreate(c.Parent().Parent().Int("idx"), c.Args()...)
-						return nil
-					},
-				},
-				{
-					Name:    "delete",
-					Aliases: []string{"d"},
-					Flags: []cli.Flag{
-						cli.StringFlag{Name: "app, a"},
-						cli.StringFlag{Name: "id, i"},
-					},
-					Usage: "deletes a source control entry",
-					Action: func(c *cli.Context) error {
-						scDelete(c.Parent().Parent().Int("idx"), c.String("app"), c.String("id"))
-						return nil
-					},
-				},
-				{
-					Name:    "list",
-					Aliases: []string{"l"},
-					Usage:   "deletes a source control entry",
-					Action: func(c *cli.Context) error {
-						scList(c.Parent().Parent().Int("idx"), c.Args().First())
 						return nil
 					},
 				},
@@ -366,58 +327,6 @@ func listPolicies(idx int) {
 
 	if err := w.Error(); err != nil {
 		panic(err)
-	}
-}
-
-func scCreate(idx int, args ...string) {
-	app, repo, token := args[0], args[1], args[2]
-	iq := demo.IQ(idx)
-	err := nexusiq.CreateSourceControlEntry(iq, app, repo, token)
-	if err != nil {
-		panic(err)
-	}
-
-	entry, err := nexusiq.GetSourceControlEntry(iq, app)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("%q\n", entry)
-}
-
-func scDelete(idx int, appID, entryID string) {
-	iq := demo.IQ(idx)
-	var scEntryID string
-	if entryID != "" {
-		scEntryID = entryID
-	} else {
-		scEntry, err := nexusiq.GetSourceControlEntry(iq, appID)
-		if err != nil {
-			panic(err)
-		}
-		scEntryID = scEntry.ID
-	}
-
-	nexusiq.DeleteSourceControlEntry(iq, appID, scEntryID)
-
-	fmt.Println("Deleted")
-}
-
-func scList(idx int, appID string) {
-	iq := demo.IQ(idx)
-	if appID != "" {
-		entry, _ := nexusiq.GetSourceControlEntry(iq, appID)
-		fmt.Printf("%v\n", entry)
-	} else {
-		apps, err := nexusiq.GetAllApplications(iq)
-		if err != nil {
-			panic(err)
-		}
-		for _, app := range apps {
-			if entry, err := nexusiq.GetSourceControlEntry(iq, app.PublicID); err == nil {
-				fmt.Printf("%s: %v\n", app.PublicID, entry)
-			}
-		}
 	}
 }
 
