@@ -20,17 +20,15 @@ var iqPoliciesCommand = cli.Command{
 	Aliases: []string{"pol", "p"},
 	Usage:   "Do stuff with policies",
 	Subcommands: []cli.Command{
-		/*
-			{
-				Name:    "import",
-				Aliases: []string{"i"},
-				Usage:   "Import the indicated policies",
-				Action: func(c *cli.Context) error {
-					// iqListOrgs(c.Parent().Int("idx"))
-					return nil
-				},
+		{
+			Name:    "import",
+			Aliases: []string{"i"},
+			Usage:   "Import the indicated policies",
+			Action: func(c *cli.Context) error {
+				importPolicies(c.Parent().Int("idx"), c.Args().First())
+				return nil
 			},
-		*/
+		},
 		{
 			Name:    "export",
 			Aliases: []string{"a"},
@@ -50,6 +48,20 @@ var iqPoliciesCommand = cli.Command{
 			},
 		},
 	},
+}
+
+func importPolicies(idx int, filePath string) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
+
+	err = privateiq.ImportPolicies(demo.IQ(idx), file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Policies imported")
 }
 
 func exportPolicies(idx int) {
