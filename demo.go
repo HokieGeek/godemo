@@ -22,6 +22,26 @@ func IQ(idx int) nexusiq.IQ {
 	return IQs[idx].Client()
 }
 
+// PIQ returns an instance of IQ Server with private getters with demo defaults
+func PIQ(idx int) nexusiq.IQ {
+	return privateiq.FromPublic(IQ(idx))
+}
+
+// NewRM creates a new instance of a Nexus Server
+func NewRM(host, user, pass string) nexusrm.RM {
+	rm, _ := nexusrm.New(host, user, pass)
+	return rm
+}
+
+// NewIQ creates a new instance of a Nexus Server
+func NewIQ(host, user, pass string, private bool) nexusiq.IQ {
+	iq, _ := nexusiq.New(host, user, pass)
+	if private {
+		return privateiq.FromPublic(iq)
+	}
+	return iq
+}
+
 // OrgsIDMap returns a map of organization ids by name and the reverse
 func OrgsIDMap(idx int) (id2name map[string]string, name2id map[string]string, err error) {
 	if orgs, err := nexusiq.GetAllOrganizations(IQ(idx)); err == nil {
