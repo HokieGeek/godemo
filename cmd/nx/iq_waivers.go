@@ -34,7 +34,15 @@ var iqWaiversCommand = cli.Command{
 }
 
 func listWaivers(idx int, format, appID string) {
-	waivers, err := privateiq.WaiversByAppID(demo.IQ(idx), appID)
+	var (
+		waivers []privateiq.Waiver
+		err     error
+	)
+	if appID != "" {
+		waivers, err = privateiq.WaiversByAppID(demo.IQ(idx), appID)
+	} else {
+		waivers, err = privateiq.Waivers(demo.IQ(idx))
+	}
 	if err != nil {
 		panic(err)
 	}
