@@ -1,6 +1,7 @@
 #!/bin/sh
 
-cd ../cmd/nx
+here=$(cd ${0%/*}; pwd)
+cd ${here}/../cmd/nx
 GOOS=linux GOARCH=amd64 go build -o nx-nix .
 GOOS=darwin GOARCH=amd64 go build -o nx-mac .
 GOOS=windows GOARCH=amd64 go build -o nx-win.exe .
