@@ -7,12 +7,16 @@ github.com/hokiegeek/gonexus-private v0.10.2 h1:BDL9bWN22lskgmDx0AgC38bqT0I3X2Gg
 github.com/hokiegeek/gonexus-private v0.10.2/go.mod h1:ydZZKuhH3ZaH+7uGe4F5+Ha/8GxXQL6iFYgh20PbmGU=
 github.com/hokiegeek/gonexus-private v0.10.3 h1:8kKmn+WVfU0Uw/9e7thMhT1cN6541H56LxsLrfDHFi4=
 github.com/hokiegeek/gonexus-private v0.10.3/go.mod h1:nrcjx5TgS79tTE3NbNlSFqmxcUidcsjRe7f1tcdfylc=
+github.com/hokiegeek/gonexus-private v0.10.4 h1:KbvWhBRasX3mjeQaHPwu5XRTkbpHKdmyHIBRXslPHeQ=
+github.com/hokiegeek/gonexus-private v0.10.4/go.mod h1:6ndJg87po2DaJiKLcfgjJ5kuqH80+8dxakXmCQxFmF4=
 github.com/sonatype-nexus-community/gonexus v0.27.0 h1:BxR9y4yQ+vfNffoL4F4YRkC0nTsYoDzO+tBAIWFoocs=
 github.com/sonatype-nexus-community/gonexus v0.27.0/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
 github.com/sonatype-nexus-community/gonexus v0.42.0 h1:S+oNfiwTlImgsql8MMFAxaptLjLJRuSdTAIXh75veo4=
 github.com/sonatype-nexus-community/gonexus v0.42.0/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
 github.com/sonatype-nexus-community/gonexus v0.47.0 h1:zTfZ+pIYoFMh3Eq537vai/To7HEgHBR59W0q1U9QyNg=
 github.com/sonatype-nexus-community/gonexus v0.47.0/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
+github.com/sonatype-nexus-community/gonexus v0.47.1 h1:NsDhJsVKwV+An4O4aESu1xfd2aZQIFwoWgfaqIVkaAk=
+github.com/sonatype-nexus-community/gonexus v0.47.1/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
 github.com/urfave/cli v1.20.0 h1:fDqGv3UG/4jbVl/QkFwEdddtEDjh/5Ov6X+0B/3bPaw=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.21.0/go.mod h1:lxDj6qX9Q6lWQxIrbrT0nwecwUtRnhVZAJjJZrVUZZQ=
