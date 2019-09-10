@@ -47,6 +47,7 @@ var iqCommand = cli.Command{
 	Subcommands: []cli.Command{
 		iqScCommand,
 		iqPoliciesCommand,
+		iqWaiversCommand,
 		{
 			Name:    "app",
 			Aliases: []string{"a"},
