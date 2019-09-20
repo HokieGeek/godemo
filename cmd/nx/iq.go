@@ -210,8 +210,11 @@ var iqCommand = cli.Command{
 		},
 		{
 			Name: "component",
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "format, f"},
+			},
 			Action: func(c *cli.Context) error {
-				iqComponentDetails(c.Parent().Int("idx"), c.Args()...)
+				iqComponentDetails(c.Parent().Int("idx"), c.String("format"), c.Args()...)
 				return nil
 			},
 		},
@@ -484,7 +487,7 @@ func iqVulnInfo(idx int, ids ...string) {
 	}
 }
 
-func iqComponentDetails(idx int, ids ...string) {
+func iqComponentDetails(idx int, format string, ids ...string) {
 	iq := demo.IQ(idx)
 
 	type catcher struct {
@@ -503,17 +506,18 @@ func iqComponentDetails(idx int, ids ...string) {
 			errs = append(errs, catcher{id, err})
 			continue
 		}
-		// if format != "" {
-		// 	tmpl := template.Must(template.New("remediation").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
-		// 	tmpl.Execute(os.Stdout, remediation)
-		// } else {
-		buf, err := json.MarshalIndent(infos[0], "", "  ")
-		if err != nil {
-			log.Fatal(err)
-		}
 
-		fmt.Println(string(buf))
-		// }
+		if format != "" {
+			tmpl := template.Must(template.New("deets").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+			tmpl.Execute(os.Stdout, remediation)
+		} else {
+			buf, err := json.MarshalIndent(infos[0], "", "  ")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(string(buf))
+		}
 	}
 
 	for _, e := range errs {
