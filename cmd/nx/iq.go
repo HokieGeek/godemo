@@ -48,6 +48,7 @@ var iqCommand = cli.Command{
 		iqScCommand,
 		iqPoliciesCommand,
 		iqWaiversCommand,
+		iqReportCommand,
 		{
 			Name:    "app",
 			Aliases: []string{"a"},
@@ -77,29 +78,6 @@ var iqCommand = cli.Command{
 			Action: func(c *cli.Context) error {
 				iqEvaluate(c.Parent().Int("idx"), c.String("app"), c.String("format"), c.Args())
 				return nil
-			},
-		},
-		{
-			Name:    "report",
-			Aliases: []string{"r"},
-			Usage:   "r [appID:stage] [appID:stage] [appID]",
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "format, f"},
-			},
-			Action: func(c *cli.Context) error {
-				appReport(c.Parent().Int("idx"), c.String("format"), c.Args()...)
-				return nil
-			},
-			Subcommands: []cli.Command{
-				{
-					Name:    "reevaluate",
-					Aliases: []string{"rv"},
-					Usage:   "reevaluate [appID:stage] [appID:stage] [appID]",
-					Action: func(c *cli.Context) error {
-						reportReevaluate(c.Parent().Parent().Int("idx"), c.Args()...)
-						return nil
-					},
-				},
 			},
 		},
 		{
@@ -230,6 +208,13 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
+		{
+			Name: "component",
+			Action: func(c *cli.Context) error {
+				iqComponentDetails(c.Parent().Int("idx"), c.Args()...)
+				return nil
+			},
+		},
 	},
 }
 
@@ -296,25 +281,6 @@ func appReport(idx int, format string, apps ...string) {
 	}
 }
 
-func reportReevaluate(idx int, apps ...string) {
-	if len(apps) == 0 {
-		if err := privateiq.ReevaluateAllReports(demo.IQ(idx)); err != nil {
-			log.Printf("could not re-evaluate reports: %v", err)
-		}
-		return
-	}
-
-	for _, app := range apps {
-		splitPos := strings.LastIndex(app, ":")
-		appID := app[:splitPos]
-		stage := app[splitPos+1:]
-
-		if err := privateiq.ReevaluateReport(demo.IQ(idx), appID, stage); err != nil {
-			log.Printf("could not re-evaluate report for '%s' at '%s' stage: %v", appID, stage, err)
-		}
-	}
-}
-
 func remediation(idx int, format, stage, app, org, comp string) {
 	c, _ := nexusiq.NewComponentFromString(comp)
 	var err error
@@ -335,12 +301,12 @@ func remediation(idx int, format, stage, app, org, comp string) {
 		tmpl := template.Must(template.New("remediation").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
 		tmpl.Execute(os.Stdout, remediation)
 	} else {
-		json, err := json.MarshalIndent(remediation, "", "  ")
+		buf, err := json.MarshalIndent(remediation, "", "  ")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(string(json))
+		fmt.Println(string(buf))
 	}
 }
 
@@ -511,6 +477,43 @@ func iqVulnInfo(idx int, ids ...string) {
 			continue
 		}
 		fmt.Println(info)
+	}
+
+	for _, e := range errs {
+		log.Printf("error with %s: %v\n", e.id, e.err)
+	}
+}
+
+func iqComponentDetails(idx int, ids ...string) {
+	iq := demo.IQ(idx)
+
+	type catcher struct {
+		id  string
+		err error
+	}
+
+	errs := make([]catcher, 0)
+	for _, id := range ids {
+		c, err := nexusiq.NewComponentFromString(id)
+		var infos []nexusiq.ComponentDetail
+		if err == nil {
+			infos, err = nexusiq.GetComponent(iq, []nexusiq.Component{*c})
+		}
+		if err != nil {
+			errs = append(errs, catcher{id, err})
+			continue
+		}
+		// if format != "" {
+		// 	tmpl := template.Must(template.New("remediation").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+		// 	tmpl.Execute(os.Stdout, remediation)
+		// } else {
+		buf, err := json.MarshalIndent(infos[0], "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(string(buf))
+		// }
 	}
 
 	for _, e := range errs {
