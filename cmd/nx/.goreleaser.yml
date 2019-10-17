@@ -1,4 +1,7 @@
 # Make sure to check the documentation at http://goreleaser.com
+project_name: nx
+env:
+  - GO111MODULE=on
 before:
   hooks:
     # you may remove this if you don't use vgo

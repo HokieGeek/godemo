@@ -11,8 +11,6 @@ jobs:
       - run: go get -v -t -d ./...
       - run: go test -v ./...
   #release:
-  #  environment:
-  #    GO111MODULE: "on"
   #  docker:
   #    - image: circleci/golang:1.13
   #  steps:
