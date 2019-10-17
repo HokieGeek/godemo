@@ -4,15 +4,18 @@ jobs:
     docker:
       - image: circleci/golang:1.13
 
-    working_directory: /go/src/github.com/sonatype-nexus-community/gonexus
+    working_directory: /go/src/github.com/hokiegeek/godemo
     steps:
       - checkout
 
       - run: go get -v -t -d ./...
       - run: go test -v ./...
-  #release:
-  #  docker:
-  #    - image: circleci/golang:1.13
-  #  steps:
-  #    - checkout
-  #    - run: go get github.com/goreleaser/goreleaser
+  release:
+    docker:
+      - image: circleci/golang:1.13
+    working_directory: /go/src/github.com/hokiegeek/godemo/cmd/nx
+    steps:
+      - checkout
+      - run: go get github.com/goreleaser/goreleaser
+      - run: go install github.com/goreleaser/goreleaser
+      - run: goreleaser

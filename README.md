@@ -1,9 +1,11 @@
-# godemo
+# godemo [![DepShield Badge](https://depshield.sonatype.org/badges/HokieGeek/godemo/depshield.svg)](https://depshield.github.io) [![CircleCI](https://circleci.com/gh/HokieGeek/godemo.svg?style=svg)](https://circleci.com/gh/HokieGeek/godemo)
 
 Silly little time-saver that takes [github.com/sonatype-nexus-community/gonexus](//github.com/sonatype-nexus-community/gonexus) and provides some shortcuts to it with an emphasis on my demo instances on localhost with standard ports and logins.
 
 ## Using library
+
 An example program:
+
 ```go
 package main
 
@@ -42,11 +44,12 @@ func main() {
 ```
 
 ## Using CLI
+
 A few example commands:
 
-| Description | Example |
-|-------------|---------|
-| List all Nexus servers on the local machine | `nx ls` |
-| List all component in the listed repositories | `nx rm ls maven-releases npm-proxy golang-group` |
-| List all applications in an IQ instance | `nx iq app` |
+| Description                                                 | Example                                                                    |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------- |
+| List all Nexus servers on the local machine                 | `nx ls`                                                                    |
+| List all component in the listed repositories               | `nx rm ls maven-releases npm-proxy golang-group`                           |
+| List all applications in an IQ instance                     | `nx iq app`                                                                |
 | Evaluate the indicated components against Root Organization | `nx iq eval "maven:jackson-databind:com.fasterxml.jackson.core:2.6.1:jar"` |
