@@ -19,3 +19,9 @@ jobs:
       - run: go get github.com/goreleaser/goreleaser
       - run: go install github.com/goreleaser/goreleaser
       - run: goreleaser
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      - build
+      - release
