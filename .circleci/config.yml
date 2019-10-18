@@ -12,13 +12,11 @@ jobs:
       - run: go test -v ./...
   release:
     docker:
-      - image: circleci/golang:1.13
-    working_directory: /go/src/github.com/hokiegeek/godemo/cmd/nx
+      - image: goreleaser/goreleaser:v0.119.0
+    working_directory: /go/src/github.com/hokiegeek/godemo
     steps:
       - checkout
-      - run: go get github.com/goreleaser/goreleaser
-      - run: go install github.com/goreleaser/goreleaser
-      - run: goreleaser
+      - run: goreleaser --config cmd/nx/.goreleaser.yml
 workflows:
   version: 2
   workflow:
