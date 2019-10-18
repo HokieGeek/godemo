@@ -16,7 +16,7 @@ jobs:
     working_directory: /go/src/github.com/hokiegeek/godemo
     steps:
       - run: apk add git
-      - run: git config --global url.git@github.com:.insteadof=https://github.com/
+      - run: git config --global url."git@github.com:".insteadOf "https://github.com/"
       - checkout
       - add_ssh_keys:
           fingerprints:
@@ -30,3 +30,8 @@ workflows:
       - release:
           requires:
             - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.*)*/
