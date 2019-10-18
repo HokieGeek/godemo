@@ -22,4 +22,6 @@ workflows:
   workflow:
     jobs:
       - build
-      - release
+      - release:
+          requires:
+            - build
