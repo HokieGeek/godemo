@@ -27,12 +27,6 @@ workflows:
   workflow:
     jobs:
       - build
-      # - build:
-      #     filters:
-      #       tags:
-      #         only: /v[0-9]+(\.[0-9]+)*/
-      #       branches:
-      #         ignore: /.*/
       - release:
           requires:
             - build
