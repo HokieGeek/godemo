@@ -18,7 +18,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - "92:47:93:9b:07:b1:22:63:9f:4b:55:85:88:4a:12:cb"
+            - "43:b1:46:78:0a:65:fc:0d:3f:72:d4:1d:92:4c:70:fa"
       - run: goreleaser
 workflows:
   version: 2
