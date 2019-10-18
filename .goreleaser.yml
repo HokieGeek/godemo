@@ -15,6 +15,7 @@ builds:
     goarch:
       - 386
       - amd64
+    main: ./cmd/nx/main.go
 archives:
   - replacements:
       darwin: Darwin

@@ -16,7 +16,7 @@ jobs:
     working_directory: /go/src/github.com/hokiegeek/godemo
     steps:
       - checkout
-      - run: goreleaser --config cmd/nx/.goreleaser.yml
+      - run: goreleaser
 workflows:
   version: 2
   workflow:
