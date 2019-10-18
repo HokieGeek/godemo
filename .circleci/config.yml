@@ -24,18 +24,20 @@ jobs:
       - run: goreleaser
 workflows:
   version: 2
-  dev_build:
+  workflow:
     jobs:
       - build
-  build_and_release:
-    jobs:
-      - build:
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*/
+      # - build:
+      #     filters:
+      #       tags:
+      #         only: /v[0-9]+(\.[0-9]+)*/
+      #       branches:
+      #         ignore: /.*/
       - release:
           requires:
             - build
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
