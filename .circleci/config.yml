@@ -15,7 +15,7 @@ jobs:
       - image: goreleaser/goreleaser:v0.119.0
     working_directory: /go/src/github.com/hokiegeek/godemo
     steps:
-      - run: apk add git
+      - run: apk add git openssh-client
       - run: git config --global url."git@github.com:".insteadOf "https://github.com/"
       - checkout
       - add_ssh_keys:
