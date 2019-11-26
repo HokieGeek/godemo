@@ -7,31 +7,36 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
 	demo "github.com/hokiegeek/godemo"
 	privateiq "github.com/hokiegeek/gonexus-private/iq"
 )
 
-var iqWaiversCommand = cli.Command{
-	Name:    "waivers",
-	Aliases: []string{"pol", "p"},
-	Usage:   "Do stuff with policies",
-	Subcommands: []cli.Command{
-		{
-			Name:    "list",
+var iqWaiversCommand = func() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "waivers",
+		Aliases: []string{"pol", "p"},
+		Short:   "Do stuff with policies",
+	}
+
+	c.AddCommand(func() *cobra.Command {
+		var format string
+		c := &cobra.Command{
+			Use:     "list",
 			Aliases: []string{"ls, l"},
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "format, f"},
+			Short:   "Lists all policies configured on the instance",
+			Run: func(cmd *cobra.Command, args []string) {
+				listWaivers(iqIdx, format, args[0])
 			},
-			Usage: "Lists all policies configured on the instance",
-			Action: func(c *cli.Context) error {
-				listWaivers(c.Parent().Int("idx"), c.String("format"), c.Args().First())
-				return nil
-			},
-		},
-	},
-}
+		}
+
+		c.Flags().StringVarP(&format, "format", "f", "", "")
+		return c
+	}())
+
+	return c
+}()
 
 func listWaivers(idx int, format, appID string) {
 	var (
@@ -48,7 +53,7 @@ func listWaivers(idx int, format, appID string) {
 	}
 
 	if format != "" {
-		tmpl := template.Must(template.New("waivers").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+		tmpl := template.Must(template.New("waivers").Funcs(template.FuncMap{"json": templateJSONPretty}).Parse(format))
 		tmpl.Execute(os.Stdout, waivers)
 	} else {
 		json, err := json.MarshalIndent(waivers, "", "  ")

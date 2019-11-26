@@ -8,135 +8,150 @@ import (
 	"os"
 	"strings"
 
-	demo "github.com/hokiegeek/godemo"
 	nexusrm "github.com/sonatype-nexus-community/gonexus/rm"
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
+
+	demo "github.com/hokiegeek/godemo"
 )
 
-var rmCommand = cli.Command{
-	Name:    "rm",
-	Aliases: []string{"r"},
-	Usage:   "repository-specific commands",
-	Flags: []cli.Flag{
-		cli.IntFlag{
-			Name:  "idx, i",
-			Value: 0,
-			Usage: "rm `idx`",
+var (
+	rmCommand        *cobra.Command
+	rmIdx            int
+	rmServer, rmAuth string
+)
+
+func createRmCommand() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "rm",
+		Aliases: []string{"r"},
+		Short:   "repository-specific commands",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			splitAuth := strings.Split(rmAuth, ":")
+			if rmServer != "" && len(splitAuth) == 2 {
+				log.Printf("Connecting to %s\n", rmServer)
+				demo.RMs = []demo.IdentifiedRM{demo.NewIdentifiedRM(rmServer, splitAuth[0], splitAuth[1])}
+			}
 		},
-		cli.StringFlag{
-			Name:  "server, s",
-			Value: "http://localhost:8081",
+	}
+
+	c.PersistentFlags().IntVarP(&rmIdx, "idx", "i", 0, "RM instance index")
+	c.PersistentFlags().StringVarP(&rmServer, "server", "s", "http://localhost:8081", "RM Server")
+	c.PersistentFlags().StringVarP(&rmAuth, "auth", "a", "admin:admin123", "RM Auth")
+
+	return c
+}
+
+func init() {
+	rmCommand = createRmCommand()
+	RootCmd.AddCommand(rmCommand)
+
+	rmCommand.AddCommand(&cobra.Command{
+		Use:   "get",
+		Short: "perform an http GET",
+		Run: func(cmd *cobra.Command, args []string) {
+			rmGet(rmIdx, args[0])
 		},
-		cli.StringFlag{
-			Name:  "auth, a",
-			Value: "admin:admin123",
+	})
+
+	rmCommand.AddCommand(&cobra.Command{
+		Use:   "del",
+		Short: "perform an http DELETE",
+		Run: func(cmd *cobra.Command, args []string) {
+			rmDel(rmIdx, args[0])
 		},
-	},
-	Before: func(c *cli.Context) error {
-		host := c.String("server")
-		auth := strings.Split(c.String("auth"), ":")
-		if host != "" && len(auth) == 2 {
-			log.Printf("Connecting to %s\n", host)
-			demo.RMs = []demo.IdentifiedRM{demo.NewIdentifiedRM(host, auth[0], auth[1])}
-		}
-		return nil
-	},
-	Action: func(c *cli.Context) error {
-		rmStatus(c.Int("idx"))
-		return nil
-	},
-	Subcommands: []cli.Command{
-		{
-			Name:  "get",
-			Usage: "perform an http GET",
-			Action: func(c *cli.Context) error {
-				rmGet(c.Parent().Int("idx"), c.Args().First())
-				return nil
-			},
+	})
+
+	rmCommand.AddCommand(&cobra.Command{
+		Use:     "repos",
+		Aliases: []string{"r"},
+		Short:   "lists all repos",
+		Run: func(cmd *cobra.Command, args []string) {
+			rmListRepos(rmIdx)
 		},
-		{
-			Name:  "del",
-			Usage: "perform an http DELETE",
-			Action: func(c *cli.Context) error {
-				rmDel(c.Parent().Int("idx"), c.Args().First())
-				return nil
-			},
+	})
+
+	rmCommand.AddCommand(&cobra.Command{
+		Use:     "ls",
+		Aliases: []string{"l"},
+		Short:   "lists all components in a repo",
+		Run: func(cmd *cobra.Command, args []string) {
+			rmListRepoComponents(rmIdx, args)
 		},
-		{
-			Name:    "repos",
-			Aliases: []string{"r"},
-			Usage:   "lists all repos",
-			Action: func(c *cli.Context) error {
-				rmListRepos(c.Parent().Int("idx"))
-				return nil
-			},
-		},
-		{
-			Name:    "ls",
-			Aliases: []string{"l"},
-			Usage:   "lists all components in a repo",
-			Action: func(c *cli.Context) error {
-				rmListRepoComponents(c.Parent().Int("idx"), c.Args())
-				return nil
-			},
-		},
-		{
-			Name:    "up",
-			Aliases: []string{"u"},
-			Usage:   "upload component",
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "repo, r"},
-				cli.StringFlag{Name: "coord, c"},
-				cli.StringFlag{Name: "file, f"},
-			},
-			Action: func(c *cli.Context) error {
-				rmUploadComponent(c.Parent().Int("idx"), c.String("repo"), c.String("coord"), c.String("file"))
-				return nil
-			},
-		},
-		{
-			Name:  "ro",
-			Usage: "read-only mode functions",
-			Action: func(c *cli.Context) error {
-				rmReadOnlyToggle(c.Parent().Int("idx"))
-				rmStatus(c.Parent().Int("idx"))
-				return nil
-			},
-			Subcommands: []cli.Command{
-				{
-					Name:    "enable",
-					Aliases: []string{"e"},
-					Usage:   "enables read-only mode",
-					Action: func(c *cli.Context) error {
-						rmReadOnly(c.Parent().Parent().Int("idx"), true, false)
-						rmStatus(c.Parent().Int("idx"))
-						return nil
-					},
+	})
+
+	rmCommand.AddCommand(
+		func() *cobra.Command {
+			var repo, coord, file string
+
+			c := &cobra.Command{
+				Use:     "up",
+				Aliases: []string{"u"},
+				Short:   "upload component",
+				Run: func(cmd *cobra.Command, args []string) {
+					rmUploadComponent(rmIdx, repo, coord, file)
 				},
-				{
-					Name:    "release",
-					Aliases: []string{"r"},
-					Usage:   "releases from read-only mode",
-					Flags: []cli.Flag{
-						cli.BoolFlag{Name: "force, f"},
-					},
-					Action: func(c *cli.Context) error {
-						rmReadOnly(c.Parent().Parent().Int("idx"), false, c.Bool("force"))
-						rmStatus(c.Parent().Int("idx"))
-						return nil
-					},
+			}
+
+			c.Flags().StringVarP(&repo, "repo", "r", "", "")
+			c.Flags().StringVarP(&coord, "coord", "c", "", "")
+			c.Flags().StringVarP(&file, "file", "f", "", "")
+
+			return c
+		}(),
+	)
+
+	rmCommand.AddCommand(
+		func() *cobra.Command {
+			c := &cobra.Command{
+				Use:   "ro",
+				Short: "read-only mode functions",
+				Run: func(cmd *cobra.Command, args []string) {
+					rmReadOnlyToggle(rmIdx)
+					rmStatus(rmIdx)
 				},
-			},
+			}
+
+			c.AddCommand(&cobra.Command{
+				Use:     "enable",
+				Aliases: []string{"e"},
+				Short:   "enables read-only mode",
+				Run: func(cmd *cobra.Command, args []string) {
+					rmReadOnlyToggle(rmIdx)
+					rmStatus(rmIdx)
+				},
+			})
+
+			c.AddCommand(
+				func() *cobra.Command {
+					var force bool
+
+					c := &cobra.Command{
+						Use:     "release",
+						Aliases: []string{"r"},
+						Short:   "releases from read-only mode",
+						Run: func(cmd *cobra.Command, args []string) {
+							rmReadOnly(rmIdx, false, force)
+							rmStatus(rmIdx)
+						},
+					}
+
+					c.Flags().BoolVarP(&force, "force", "f", false, "")
+
+					return c
+				}(),
+			)
+
+			return c
+		}(),
+	)
+
+	rmCommand.AddCommand(&cobra.Command{
+		Use:   "zip",
+		Short: "get support zip",
+		Run: func(cmd *cobra.Command, args []string) {
+			rmZip(rmIdx)
 		},
-		{
-			Name:  "zip",
-			Usage: "get support zip",
-			Action: func(c *cli.Context) error {
-				rmZip(c.Parent().Int("idx"))
-				return nil
-			},
-		},
-	},
+	})
 }
 
 func rmGet(idx int, endpoint string) {

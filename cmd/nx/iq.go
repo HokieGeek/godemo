@@ -9,208 +9,190 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
 	demo "github.com/hokiegeek/godemo"
 	privateiq "github.com/hokiegeek/gonexus-private/iq"
 	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
 )
 
-var iqCommand = cli.Command{
-	Name:    "iq",
-	Aliases: []string{"q"},
-	Usage:   "iq-specific commands",
-	Flags: []cli.Flag{
-		cli.IntFlag{
-			Name:  "idx, i",
-			Value: 0,
-			Usage: "iq `idx`",
+var (
+	iqCommand        *cobra.Command
+	iqIdx            int
+	iqServer, iqAuth string
+)
+
+func createIqCommand() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "iq",
+		Aliases: []string{"q"},
+		Short:   "iq-specific commands",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			splitAuth := strings.Split(iqAuth, ":")
+			if iqServer != "" && len(splitAuth) == 2 {
+				log.Printf("Connecting to %s\n", iqServer)
+				demo.IQs = []demo.IdentifiedIQ{demo.NewIdentifiedIQ(iqServer, splitAuth[0], splitAuth[1])}
+			}
 		},
-		cli.StringFlag{
-			Name:  "server, s",
-			Value: "http://localhost:8070",
+	}
+
+	c.PersistentFlags().IntVarP(&iqIdx, "idx", "i", 0, "IQ instance index")
+	c.PersistentFlags().StringVarP(&iqServer, "server", "s", "http://localhost:8070", "IQ Server")
+	c.PersistentFlags().StringVarP(&iqAuth, "auth", "a", "admin:admin123", "IQ Auth")
+
+	return c
+}
+
+func init() {
+	iqCommand = createIqCommand()
+	RootCmd.AddCommand(iqCommand)
+
+	iqCommand.AddCommand(iqScCommand)
+	iqCommand.AddCommand(iqPoliciesCommand)
+	iqCommand.AddCommand(iqWaiversCommand)
+	iqCommand.AddCommand(iqReportCommand)
+
+	iqCommand.AddCommand(&cobra.Command{
+		Use:   "violations",
+		Short: "List violations by policy name",
+		Run: func(cmd *cobra.Command, args []string) {
+			listViolatingApps(iqIdx, args...)
 		},
-		cli.StringFlag{
-			Name:  "auth, a",
-			Value: "admin:admin123",
+	})
+
+	iqCommand.AddCommand(&cobra.Command{
+		Use: "vulns",
+		Run: func(cmd *cobra.Command, args []string) {
+			iqVulnInfo(iqIdx, args...)
 		},
-	},
-	Before: func(c *cli.Context) error {
-		host := c.String("server")
-		auth := strings.Split(c.String("auth"), ":")
-		if host != "" && len(auth) == 2 {
-			log.Printf("Connecting to %s\n", host)
-			demo.IQs = []demo.IdentifiedIQ{demo.NewIdentifiedIQ(host, auth[0], auth[1])}
-		}
-		return nil
-	},
-	Subcommands: []cli.Command{
-		iqScCommand,
-		iqPoliciesCommand,
-		iqWaiversCommand,
-		iqReportCommand,
-		iqComponentCommand,
-		{
-			Name:    "app",
-			Aliases: []string{"a"},
-			Usage:   "lists all applications",
-			Action: func(c *cli.Context) error {
-				iqListApps(c.Parent().Int("idx"))
-				return nil
-			},
+	})
+
+	iqCommand.AddCommand(&cobra.Command{
+		Use:     "search",
+		Aliases: []string{"q"},
+		Run: func(cmd *cobra.Command, args []string) {
+			iqSearch(iqIdx, args)
 		},
-		{
-			Name:    "org",
-			Aliases: []string{"o"},
-			Usage:   "lists all organizations",
-			Action: func(c *cli.Context) error {
-				iqListOrgs(c.Parent().Int("idx"))
-				return nil
-			},
+	})
+
+	iqCommand.AddCommand(&cobra.Command{
+		Use:   "zip",
+		Short: "get support zip",
+		Run: func(cmd *cobra.Command, args []string) {
+			iqZip(iqIdx)
 		},
-		{
-			Name:    "license",
-			Aliases: []string{"lic"},
-			Action: func(c *cli.Context) error {
-				installLicense(c.Parent().Int("idx"), c.Args().First())
-				return nil
-			},
-		},
-		{
-			Name:    "eval",
-			Aliases: []string{"e"},
-			Usage:   "evaluate the components",
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "app, a"},
-				cli.StringFlag{Name: "format, f"},
-			},
-			Action: func(c *cli.Context) error {
-				iqEvaluate(c.Parent().Int("idx"), c.String("app"), c.String("format"), c.Args())
-				return nil
-			},
-		},
-		{
-			Name:    "remediation",
-			Aliases: []string{"rem"},
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "app, a"},
-				cli.StringFlag{Name: "org, o"},
-				cli.StringFlag{Name: "stage, s", Value: "build"},
-				cli.StringFlag{Name: "format, f"},
-				cli.BoolFlag{Name: "purl, p"},
-				// cli.StringFlag{Name: "report, r"},
-			},
-			Action: func(c *cli.Context) error {
-				remediation(c.Parent().Int("idx"), c.Bool("purl"), c.String("format"), c.String("stage"), c.String("app"), c.String("org"), c.Args().First())
-				return nil
-			},
-		},
-		{
-			Name:  "zip",
-			Usage: "get support zip",
-			Action: func(c *cli.Context) error {
-				iqZip(c.Parent().Int("idx"))
-				return nil
-			},
-		},
-		{
-			Name:    "webhook",
-			Aliases: []string{"wh"},
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "secret, s"},
-				cli.StringFlag{Name: "url, u"},
-				cli.StringFlag{Name: "events, e", Value: "Application Evaluation"},
-			},
-			Action: func(c *cli.Context) error {
-				webhook(c.Parent().Int("idx"), c.String("url"), c.String("secret"), c.String("events"))
-				return nil
-			},
-		},
-		{
-			Name:    "auto-apps",
-			Aliases: []string{"auto"},
-			Flags: []cli.Flag{
-				cli.BoolFlag{Name: "disable, d"},
-			},
-			Action: func(c *cli.Context) error {
-				autoApps(c.Parent().Int("idx"), c.Bool("disable"), c.Args().First())
-				return nil
-			},
-		},
-		{
-			Name:  "violations",
-			Usage: "List violations by policy name",
-			Action: func(c *cli.Context) error {
-				listViolatingApps(c.Parent().Int("idx"), c.Args()...)
-				return nil
-			},
-		},
-		{
-			Name:    "notice",
-			Aliases: []string{"msg"},
-			Flags: []cli.Flag{
-				cli.BoolFlag{Name: "disable, d"},
-			},
-			Usage: "Set a message in IQ",
-			Action: func(c *cli.Context) error {
-				systemNotice(c.Parent().Int("idx"), c.Bool("disable"), strings.Join(c.Args(), " "))
-				return nil
-			},
-		},
-		{
-			Name:    "search",
-			Aliases: []string{"q"},
-			Action: func(c *cli.Context) error {
-				iqSearch(c.Parent().Int("idx"), c.Args())
-				return nil
-			},
-		},
-		{
-			Name: "retention",
-			Action: func(c *cli.Context) error {
-				retentionList(c.Parent().Int("idx"), c.Args().First())
-				return nil
-			},
-			Subcommands: []cli.Command{
-				{
-					Name:    "list",
-					Aliases: []string{"ls"},
-					Action: func(c *cli.Context) error {
-						retentionList(c.Parent().Parent().Int("idx"), c.Args().First())
-						return nil
-					},
+	})
+
+	iqCommand.AddCommand(
+		func() *cobra.Command {
+			var secret, url, events string
+
+			c := &cobra.Command{
+				Use:     "webhook",
+				Aliases: []string{"wh"},
+				Run: func(cmd *cobra.Command, args []string) {
+					webhook(iqIdx, url, secret, events)
 				},
-			},
-		},
-		{
-			Name: "role",
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "app, a"},
-				cli.StringFlag{Name: "org, o"},
-			},
-			Action: func(c *cli.Context) error {
-				rolesList(c.Parent().Int("idx"), c.String("app"), c.String("org"))
-				return nil
-			},
-			Subcommands: []cli.Command{
-				{
-					Name:    "user",
-					Aliases: []string{"user"},
-					Action: func(c *cli.Context) error {
-						retentionList(c.Parent().Int("idx"), c.Args().First())
-						return nil
-					},
+			}
+
+			c.Flags().StringVarP(&secret, "secret", "s", "", "")
+			c.Flags().StringVarP(&url, "url", "u", "", "")
+			c.Flags().StringVarP(&events, "events", "e", "Application Evaluation", "")
+
+			c.MarkFlagRequired("secret")
+			c.MarkFlagRequired("url")
+
+			return c
+		}(),
+	)
+
+	iqCommand.AddCommand(
+		func() *cobra.Command {
+			var disable bool
+
+			c := &cobra.Command{
+				Use:     "auto-apps",
+				Aliases: []string{"auto"},
+				Run: func(cmd *cobra.Command, args []string) {
+					autoApps(iqIdx, disable, args[0])
 				},
-			},
-		},
-		{
-			Name: "vulns",
-			Action: func(c *cli.Context) error {
-				iqVulnInfo(c.Parent().Int("idx"), c.Args()...)
-				return nil
-			},
-		},
-	},
+			}
+
+			c.Flags().BoolVarP(&disable, "disable", "d", false, "")
+
+			return c
+		}(),
+	)
+
+	iqCommand.AddCommand(
+		func() *cobra.Command {
+			var disable bool
+
+			c := &cobra.Command{
+				Use:     "notice",
+				Aliases: []string{"msg"},
+				Short:   "Set a message in IQ",
+				Run: func(cmd *cobra.Command, args []string) {
+					systemNotice(iqIdx, disable, strings.Join(args, " "))
+				},
+			}
+
+			c.Flags().BoolVarP(&disable, "disable", "d", false, "")
+
+			return c
+		}(),
+	)
+
+	iqCommand.AddCommand(
+		func() *cobra.Command {
+			c := &cobra.Command{
+				Use:     "retention",
+				Aliases: []string{"wh"},
+				Run: func(cmd *cobra.Command, args []string) {
+					retentionList(iqIdx, args[0])
+				},
+			}
+
+			c.AddCommand(&cobra.Command{
+				Use:     "list",
+				Aliases: []string{"ls"},
+				Run: func(cmd *cobra.Command, args []string) {
+					retentionList(iqIdx, args[0])
+				},
+			})
+
+			return c
+		}(),
+	)
+
+	iqCommand.AddCommand(
+		func() *cobra.Command {
+			var app, org string
+
+			c := &cobra.Command{
+				Use:     "role",
+				Aliases: []string{"wh"},
+				Run: func(cmd *cobra.Command, args []string) {
+					rolesList(iqIdx, app, org)
+				},
+			}
+
+			c.Flags().StringVarP(&app, "app", "a", "", "")
+			c.Flags().StringVarP(&org, "org", "o", "", "")
+
+			/*
+				c.AddCommand(&cobra.Command{
+						Use:    "user",
+						Aliases: []string{"user"},
+					Run: func(cmd *cobra.Command, args []string) {
+						// TODO
+					},
+				})
+			*/
+
+			return c
+		}(),
+	)
 }
 
 func iqListApps(idx int) {
@@ -239,7 +221,7 @@ func iqEvaluate(idx int, app, format string, components []string) {
 	}
 
 	if format != "" {
-		tmpl := template.Must(template.New("report").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+		tmpl := template.Must(template.New("report").Funcs(template.FuncMap{"json": templateJSONPretty}).Parse(format))
 		tmpl.Execute(os.Stdout, report)
 	} else {
 		json, err := json.MarshalIndent(report, "", "  ")
@@ -263,7 +245,7 @@ func appReport(idx int, format string, apps ...string) {
 		}
 
 		if format != "" {
-			tmpl := template.Must(template.New("report").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+			tmpl := template.Must(template.New("report").Funcs(template.FuncMap{"json": templateJSONPretty}).Parse(format))
 			tmpl.Execute(os.Stdout, report)
 		} else {
 			json, err := json.MarshalIndent(report, "", "  ")
@@ -300,7 +282,7 @@ func remediation(idx int, isPurl bool, format, stage, app, org, comp string) {
 	}
 
 	if format != "" {
-		tmpl := template.Must(template.New("remediation").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
+		tmpl := template.Must(template.New("remediation").Funcs(template.FuncMap{"json": templateJSONPretty}).Parse(format))
 		tmpl.Execute(os.Stdout, remediation)
 	} else {
 		buf, err := json.MarshalIndent(remediation, "", "  ")

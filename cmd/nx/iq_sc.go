@@ -3,33 +3,35 @@ package main
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
 	demo "github.com/hokiegeek/godemo"
 	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
 )
 
-var iqScCommand = cli.Command{
-	Name:  "sc",
-	Usage: "source control actions",
-	Subcommands: []cli.Command{
-		scCreate(),
-		scDelete(),
-		scList(),
-	},
-}
+var iqScCommand = func() *cobra.Command {
+	c := &cobra.Command{
+		Use:   "sc",
+		Short: "source control actions",
+	}
 
-func scCreate() cli.Command {
-	return cli.Command{
-		Name:    "create",
+	c.AddCommand(scCreate())
+	c.AddCommand(scDelete())
+	c.AddCommand(scList())
+
+	return c
+}()
+
+func scCreate() *cobra.Command {
+	return &cobra.Command{
+		Use:     "create",
 		Aliases: []string{"c"},
-		Usage:   "create <appId> <repositoryUrl> <accessToken>",
-		Action: func(c *cli.Context) error {
-			idx := c.Parent().Parent().Int("idx")
-			app, repo, token := c.Args()[0], c.Args()[1], c.Args()[2]
+		Short:   "create <appId> <repositoryUrl> <accessToken>",
+		Run: func(cmd *cobra.Command, args []string) {
+			app, repo, token := args[0], args[1], args[2]
 
 			// app, repo, token := args[0], args[1], args[2]
-			iq := demo.IQ(idx)
+			iq := demo.IQ(iqIdx)
 			err := nexusiq.CreateSourceControlEntry(iq, app, repo, token)
 			if err != nil {
 				panic(err)
@@ -41,25 +43,19 @@ func scCreate() cli.Command {
 			}
 
 			fmt.Printf("%q\n", entry)
-			return nil
 		},
 	}
 }
 
-func scDelete() cli.Command {
-	return cli.Command{
-		Name:    "delete",
-		Aliases: []string{"d"},
-		Flags: []cli.Flag{
-			cli.StringFlag{Name: "app, a"},
-			cli.StringFlag{Name: "id, i"},
-		},
-		Usage: "deletes a source control entry",
-		Action: func(c *cli.Context) error {
-			idx := c.Parent().Parent().Int("idx")
-			appID, entryID := c.String("app"), c.String("id")
+func scDelete() *cobra.Command {
+	var appID, entryID string
 
-			iq := demo.IQ(idx)
+	c := &cobra.Command{
+		Use:     "delete",
+		Aliases: []string{"d"},
+		Short:   "deletes a source control entry",
+		Run: func(cmd *cobra.Command, args []string) {
+			iq := demo.IQ(iqIdx)
 			var scEntryID string
 			if entryID != "" {
 				scEntryID = entryID
@@ -74,19 +70,23 @@ func scDelete() cli.Command {
 			nexusiq.DeleteSourceControlEntry(iq, appID, scEntryID)
 
 			fmt.Println("Deleted")
-			return nil
 		},
 	}
+
+	c.Flags().StringVarP(&appID, "app", "a", "", "")
+	c.Flags().StringVarP(&entryID, "id", "i", "", "")
+
+	return c
 }
 
-func scList() cli.Command {
-	return cli.Command{
-		Name:    "list",
+func scList() *cobra.Command {
+	return &cobra.Command{
+		Use:     "list",
 		Aliases: []string{"l"},
-		Usage:   "deletes a source control entry",
-		Action: func(c *cli.Context) error {
-			idx, appID := c.Parent().Parent().Int("idx"), c.Args().First()
-			iq := demo.IQ(idx)
+		Short:   "deletes a source control entry",
+		Run: func(cmd *cobra.Command, args []string) {
+			appID := args[0]
+			iq := demo.IQ(iqIdx)
 			if appID != "" {
 				entry, _ := nexusiq.GetSourceControlEntry(iq, appID)
 				fmt.Printf("%v\n", entry)
@@ -101,7 +101,6 @@ func scList() cli.Command {
 					}
 				}
 			}
-			return nil
 		},
 	}
 }

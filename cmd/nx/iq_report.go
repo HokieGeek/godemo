@@ -6,44 +6,53 @@ import (
 	"log"
 	"strings"
 
-	"github.com/urfave/cli"
-
 	demo "github.com/hokiegeek/godemo"
 	privateiq "github.com/hokiegeek/gonexus-private/iq"
 	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
+	"github.com/spf13/cobra"
 )
 
-var iqReportCommand = cli.Command{
-	Name:    "report",
-	Aliases: []string{"r"},
-	Flags: []cli.Flag{
-		cli.StringFlag{Name: "format, f"},
-	},
-	Action: func(c *cli.Context) error {
-		appReport(c.Parent().Int("idx"), c.String("format"), c.Args()...)
-		return nil
-	},
-	Subcommands: []cli.Command{
-		{
-			Name:    "reevaluate",
+var iqReportCommand = func() *cobra.Command {
+	var format string
+
+	c := &cobra.Command{
+		Use:     "report",
+		Aliases: []string{"r"},
+		Run: func(cmd *cobra.Command, args []string) {
+			appReport(iqIdx, format, args...)
+		},
+	}
+
+	c.Flags().StringVarP(&format, "format", "f", "", "")
+
+	c.AddCommand(func() *cobra.Command {
+		c := &cobra.Command{
+			Use:     "reevaluate",
 			Aliases: []string{"rv"},
-			Usage:   "reevaluate [appID:stage] [appID:stage] [appID]",
-			Action: func(c *cli.Context) error {
-				reportReevaluate(c.Parent().Parent().Int("idx"), c.Args()...)
-				return nil
+			Short:   "reevaluate [appID:stage] [appID:stage] [appID]",
+			Run: func(cmd *cobra.Command, args []string) {
+				reportReevaluate(iqIdx, args...)
 			},
-		},
-		{
-			Name:    "diff",
+		}
+
+		return c
+	}())
+
+	c.AddCommand(func() *cobra.Command {
+		c := &cobra.Command{
+			Use:     "diff",
 			Aliases: []string{"d"},
-			Usage:   "diff [appID] [report1ID] [report2ID]",
-			Action: func(c *cli.Context) error {
-				reportDiff(c.Parent().Parent().Int("idx"), c.Args().Get(0), c.Args().Get(1), c.Args().Get(2))
-				return nil
+			Short:   "diff [appID] [report1ID] [report2ID]",
+			Run: func(cmd *cobra.Command, args []string) {
+				reportDiff(iqIdx, args[0], args[1], args[2])
 			},
-		},
-	},
-}
+		}
+
+		return c
+	}())
+
+	return c
+}()
 
 func reportReevaluate(idx int, apps ...string) {
 	if len(apps) == 0 {

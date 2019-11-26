@@ -8,47 +8,61 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
 	demo "github.com/hokiegeek/godemo"
 	privateiq "github.com/hokiegeek/gonexus-private/iq"
 	nexusiq "github.com/sonatype-nexus-community/gonexus/iq"
 )
 
-var iqPoliciesCommand = cli.Command{
-	Name:    "policies",
-	Aliases: []string{"pol", "p"},
-	Usage:   "Do stuff with policies",
-	Subcommands: []cli.Command{
-		{
-			Name:    "import",
+var iqPoliciesCommand = func() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "policies",
+		Aliases: []string{"pol", "p"},
+		Short:   "Do stuff with policies",
+	}
+
+	c.AddCommand(func() *cobra.Command {
+		c := &cobra.Command{
+			Use:     "import",
 			Aliases: []string{"i"},
-			Usage:   "Import the indicated policies",
-			Action: func(c *cli.Context) error {
-				importPolicies(c.Parent().Int("idx"), c.Args().First())
-				return nil
+			Short:   "Import the indicated policies",
+			Run: func(cmd *cobra.Command, args []string) {
+				importPolicies(iqIdx, args[0])
 			},
-		},
-		{
-			Name:    "export",
+		}
+
+		return c
+	}())
+
+	c.AddCommand(func() *cobra.Command {
+		c := &cobra.Command{
+			Use:     "export",
 			Aliases: []string{"a"},
-			Usage:   "exports the policies of the indicated IQ",
-			Action: func(c *cli.Context) error {
-				exportPolicies(c.Parent().Int("idx"))
-				return nil
+			Short:   "exports the policies of the indicated IQ",
+			Run: func(cmd *cobra.Command, args []string) {
+				exportPolicies(iqIdx)
 			},
-		},
-		{
-			Name:    "list",
+		}
+
+		return c
+	}())
+
+	c.AddCommand(func() *cobra.Command {
+		c := &cobra.Command{
+			Use:     "list",
 			Aliases: []string{"ls, l"},
-			Usage:   "Lists all policies configured on the instance",
-			Action: func(c *cli.Context) error {
-				listPolicies(c.Parent().Int("idx"))
-				return nil
+			Short:   "Lists all policies configured on the instance",
+			Run: func(cmd *cobra.Command, args []string) {
+				listPolicies(iqIdx)
 			},
-		},
-	},
-}
+		}
+
+		return c
+	}())
+
+	return c
+}()
 
 func importPolicies(idx int, filePath string) {
 	file, err := os.Open(filePath)

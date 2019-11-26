@@ -3,14 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/hokiegeek/godemo"
-	"github.com/urfave/cli"
+	// nexuscli "github.com/sonatype-nexus-community/nexus-cli/cmd"
+
+	"github.com/spf13/cobra"
+
+	demo "github.com/hokiegeek/godemo"
 )
 
-var tmplJSONPretty = func(v interface{}) string {
+var templateJSONPretty = func(v interface{}) string {
 	a, _ := json.MarshalIndent(v, "", "  ")
 	return string(a)
 }
@@ -27,30 +29,18 @@ func listServers() {
 	}
 }
 
-func main() {
-	app := cli.NewApp()
-	app.Usage = "CLI to interact with Repository Manager and IQ"
-	app.HideVersion = true
-
-	defaultAction := func(c *cli.Context) error {
+// RootCmd TODO
+var RootCmd = &cobra.Command{
+	Use:   "nx",
+	Short: "CLI to interact with Repository Manager and IQ",
+	Run: func(cmd *cobra.Command, args []string) {
 		listServers()
-		return nil
-	}
+	},
+}
 
-	app.Commands = []cli.Command{
-		{
-			Name:   "ls",
-			Usage:  "lists all detected Nexus servers",
-			Action: defaultAction,
-		},
-		rmCommand,
-		iqCommand,
-	}
-
-	app.Action = defaultAction
-
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
+func main() {
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
