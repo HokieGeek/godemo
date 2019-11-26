@@ -14,6 +14,8 @@ github.com/sonatype-nexus-community/gonexus v0.47.1 h1:NsDhJsVKwV+An4O4aESu1xfd2
 github.com/sonatype-nexus-community/gonexus v0.47.1/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
 github.com/sonatype-nexus-community/gonexus v0.48.0 h1:NnanH+AL10cFMuyvsU3vsM612foTugFljG0nMwjQb0U=
 github.com/sonatype-nexus-community/gonexus v0.48.0/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
+github.com/sonatype-nexus-community/gonexus v0.52.0 h1:oiH971kpQcL7lq4aN/5w83Pp1oJ6o717Q8/NnAG0J48=
+github.com/sonatype-nexus-community/gonexus v0.52.0/go.mod h1:8mIhif8LsneZhpdBovy51ah8CcYuy7Al4WP723TQoOY=
 github.com/urfave/cli v1.22.1 h1:+mkCCcOFKPnCmVYVcURKps1Xe+3zP90gSYGNfRkjoIY=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

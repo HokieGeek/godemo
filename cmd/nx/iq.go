@@ -49,6 +49,7 @@ var iqCommand = cli.Command{
 		iqPoliciesCommand,
 		iqWaiversCommand,
 		iqReportCommand,
+		iqComponentCommand,
 		{
 			Name:    "app",
 			Aliases: []string{"a"},
@@ -64,6 +65,14 @@ var iqCommand = cli.Command{
 			Usage:   "lists all organizations",
 			Action: func(c *cli.Context) error {
 				iqListOrgs(c.Parent().Int("idx"))
+				return nil
+			},
+		},
+		{
+			Name:    "license",
+			Aliases: []string{"lic"},
+			Action: func(c *cli.Context) error {
+				installLicense(c.Parent().Int("idx"), c.Args().First())
 				return nil
 			},
 		},
@@ -88,18 +97,11 @@ var iqCommand = cli.Command{
 				cli.StringFlag{Name: "org, o"},
 				cli.StringFlag{Name: "stage, s", Value: "build"},
 				cli.StringFlag{Name: "format, f"},
+				cli.BoolFlag{Name: "purl, p"},
 				// cli.StringFlag{Name: "report, r"},
 			},
 			Action: func(c *cli.Context) error {
-				remediation(c.Parent().Int("idx"), c.String("format"), c.String("stage"), c.String("app"), c.String("org"), c.Args().First())
-				return nil
-			},
-		},
-		{
-			Name:    "license",
-			Aliases: []string{"lic"},
-			Action: func(c *cli.Context) error {
-				installLicense(c.Parent().Int("idx"), c.Args().First())
+				remediation(c.Parent().Int("idx"), c.Bool("purl"), c.String("format"), c.String("stage"), c.String("app"), c.String("org"), c.Args().First())
 				return nil
 			},
 		},
@@ -208,16 +210,6 @@ var iqCommand = cli.Command{
 				return nil
 			},
 		},
-		{
-			Name: "component",
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "format, f"},
-			},
-			Action: func(c *cli.Context) error {
-				iqComponentDetails(c.Parent().Int("idx"), c.String("format"), c.Args()...)
-				return nil
-			},
-		},
 	},
 }
 
@@ -284,8 +276,15 @@ func appReport(idx int, format string, apps ...string) {
 	}
 }
 
-func remediation(idx int, format, stage, app, org, comp string) {
-	c, _ := nexusiq.NewComponentFromString(comp)
+func remediation(idx int, isPurl bool, format, stage, app, org, comp string) {
+	var c *nexusiq.Component
+
+	if isPurl {
+		c = &nexusiq.Component{PackageURL: comp}
+	} else {
+		c, _ = nexusiq.NewComponentFromString(comp)
+	}
+
 	var err error
 	var remediation nexusiq.Remediation
 	switch {
@@ -480,44 +479,6 @@ func iqVulnInfo(idx int, ids ...string) {
 			continue
 		}
 		fmt.Println(info)
-	}
-
-	for _, e := range errs {
-		log.Printf("error with %s: %v\n", e.id, e.err)
-	}
-}
-
-func iqComponentDetails(idx int, format string, ids ...string) {
-	iq := demo.IQ(idx)
-
-	type catcher struct {
-		id  string
-		err error
-	}
-
-	errs := make([]catcher, 0)
-	for _, id := range ids {
-		c, err := nexusiq.NewComponentFromString(id)
-		var infos []nexusiq.ComponentDetail
-		if err == nil {
-			infos, err = nexusiq.GetComponent(iq, []nexusiq.Component{*c})
-		}
-		if err != nil {
-			errs = append(errs, catcher{id, err})
-			continue
-		}
-
-		if format != "" {
-			tmpl := template.Must(template.New("deets").Funcs(template.FuncMap{"json": tmplJSONPretty}).Parse(format))
-			tmpl.Execute(os.Stdout, remediation)
-		} else {
-			buf, err := json.MarshalIndent(infos[0], "", "  ")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			fmt.Println(string(buf))
-		}
 	}
 
 	for _, e := range errs {
