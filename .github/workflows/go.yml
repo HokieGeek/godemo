@@ -27,4 +27,4 @@ jobs:
         run: go test -v ./...
 
       - name: Release
-        uses: goreleaser/goreleaser:v0.119.0
+        uses: goreleaser/goreleaser@v0.119.0
