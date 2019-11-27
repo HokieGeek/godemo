@@ -4,6 +4,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: "github.com/hokiegeek"
     steps:
       - name: Set up Go 1.13
         uses: actions/setup-go@v1
@@ -14,16 +16,15 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
 
+      - name: Configure to use private repo
+        run: |
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+
       - name: Get dependencies
         run: go get -v -t -d ./...
 
       - name: Test
         run: go test -v ./...
-      # - name: Release
-      #   uses: goreleaser/goreleaser:v0.119.0
-      #   run: |
-      #     # apk add git openssh-client
-      #     # git config --global url."git@github.com:".insteadOf "https://github.com/"
-      #     # checkout
-      #     # add_ssh_keys
-      #     goreleaser
+
+      - name: Release
+        uses: goreleaser/goreleaser:v0.119.0
