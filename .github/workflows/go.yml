@@ -17,14 +17,13 @@ jobs:
       - name: Get dependencies
         run: go get -v -t -d ./...
 
-      - name: Build
-        run: go build -v .
-
-      - name: Release
-        uses: goreleaser/goreleaser:v0.119.0
-        run: |
-          # apk add git openssh-client
-          # git config --global url."git@github.com:".insteadOf "https://github.com/"
-          # checkout
-          # add_ssh_keys
-          goreleaser
+      - name: Test
+        run: go test -v ./...
+      # - name: Release
+      #   uses: goreleaser/goreleaser:v0.119.0
+      #   run: |
+      #     # apk add git openssh-client
+      #     # git config --global url."git@github.com:".insteadOf "https://github.com/"
+      #     # checkout
+      #     # add_ssh_keys
+      #     goreleaser
