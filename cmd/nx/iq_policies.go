@@ -18,15 +18,15 @@ import (
 var iqPoliciesCommand = func() *cobra.Command {
 	c := &cobra.Command{
 		Use:     "policies",
+		Short:   "(beta) Do stuff with policies",
 		Aliases: []string{"pol", "p"},
-		Short:   "Do stuff with policies",
 	}
 
 	c.AddCommand(func() *cobra.Command {
 		c := &cobra.Command{
 			Use:     "import",
-			Aliases: []string{"i"},
 			Short:   "Import the indicated policies",
+			Aliases: []string{"i"},
 			Run: func(cmd *cobra.Command, args []string) {
 				importPolicies(iqIdx, args[0])
 			},

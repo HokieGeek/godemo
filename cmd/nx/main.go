@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	// nexuscli "github.com/sonatype-nexus-community/nexus-cli/cmd"
+	nexuscli "github.com/sonatype-nexus-community/nexus-cli/cmd"
 
 	"github.com/spf13/cobra"
 
@@ -30,15 +30,25 @@ func listServers() {
 }
 
 // RootCmd TODO
-var RootCmd = &cobra.Command{
-	Use:   "nx",
-	Short: "CLI to interact with Repository Manager and IQ",
-	Run: func(cmd *cobra.Command, args []string) {
-		listServers()
-	},
-}
+// var RootCmd = &cobra.Command{}
+var RootCmd = nexuscli.RootCmd
 
 func main() {
+	RootCmd.Use = "nx"
+	RootCmd.Run = func(cmd *cobra.Command, args []string) {
+		listServers()
+	}
+
+	RootCmd.AddCommand(&cobra.Command{
+		Use:   "ls",
+		Short: "List all nexus servers",
+		Run: func(cmd *cobra.Command, args []string) {
+			listServers()
+		},
+	})
+
+	// RootCmd.AddCommand(&cobra.Command{
+
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

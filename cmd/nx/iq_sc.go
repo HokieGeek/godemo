@@ -12,7 +12,7 @@ import (
 var iqScCommand = func() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "sc",
-		Short: "source control actions",
+		Short: "(beta) source control actions",
 	}
 
 	c.AddCommand(scCreate())

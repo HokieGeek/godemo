@@ -1,9 +1,12 @@
 module github.com/hokiegeek/godemo
 
-go 1.12
+go 1.13
 
 require (
-	github.com/hokiegeek/gonexus-private v0.10.4
-	github.com/sonatype-nexus-community/gonexus v0.52.0
+	github.com/hokiegeek/gonexus-private v0.10.6
+	github.com/sonatype-nexus-community/gonexus v0.54.0
+	github.com/sonatype-nexus-community/nexus-cli v0.4.0
 	github.com/spf13/cobra v0.0.5
+	golang.org/x/sys v0.0.0-20191126131656-8a8471f7e56d // indirect
+	gopkg.in/yaml.v2 v2.2.7 // indirect
 )

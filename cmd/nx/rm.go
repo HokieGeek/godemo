@@ -8,10 +8,11 @@ import (
 	"os"
 	"strings"
 
-	nexusrm "github.com/sonatype-nexus-community/gonexus/rm"
 	"github.com/spf13/cobra"
 
 	demo "github.com/hokiegeek/godemo"
+	nexusrm "github.com/sonatype-nexus-community/gonexus/rm"
+	nexuscli "github.com/sonatype-nexus-community/nexus-cli/cmd"
 )
 
 var (
@@ -21,33 +22,25 @@ var (
 )
 
 func createRmCommand() *cobra.Command {
-	c := &cobra.Command{
-		Use:     "rm",
-		Aliases: []string{"r"},
-		Short:   "repository-specific commands",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			splitAuth := strings.Split(rmAuth, ":")
-			if rmServer != "" && len(splitAuth) == 2 {
-				log.Printf("Connecting to %s\n", rmServer)
-				demo.RMs = []demo.IdentifiedRM{demo.NewIdentifiedRM(rmServer, splitAuth[0], splitAuth[1])}
-			}
-		},
+	c := nexuscli.RmCommand
+	c.Aliases = []string{"r"}
+	c.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		splitAuth := strings.Split(rmAuth, ":")
+		if rmServer != "" && len(splitAuth) == 2 {
+			log.Printf("Connecting to %s\n", rmServer)
+			demo.RMs = []demo.IdentifiedRM{demo.NewIdentifiedRM(rmServer, splitAuth[0], splitAuth[1])}
+		}
 	}
-
-	c.PersistentFlags().IntVarP(&rmIdx, "idx", "i", 0, "RM instance index")
-	c.PersistentFlags().StringVarP(&rmServer, "server", "s", "http://localhost:8081", "RM Server")
-	c.PersistentFlags().StringVarP(&rmAuth, "auth", "a", "admin:admin123", "RM Auth")
 
 	return c
 }
 
 func init() {
 	rmCommand = createRmCommand()
-	RootCmd.AddCommand(rmCommand)
 
 	rmCommand.AddCommand(&cobra.Command{
 		Use:   "get",
-		Short: "perform an http GET",
+		Short: "(beta) perform an http GET",
 		Run: func(cmd *cobra.Command, args []string) {
 			rmGet(rmIdx, args[0])
 		},
@@ -55,7 +48,7 @@ func init() {
 
 	rmCommand.AddCommand(&cobra.Command{
 		Use:   "del",
-		Short: "perform an http DELETE",
+		Short: "(beta) perform an http DELETE",
 		Run: func(cmd *cobra.Command, args []string) {
 			rmDel(rmIdx, args[0])
 		},
@@ -64,7 +57,7 @@ func init() {
 	rmCommand.AddCommand(&cobra.Command{
 		Use:     "repos",
 		Aliases: []string{"r"},
-		Short:   "lists all repos",
+		Short:   "(beta) lists all repos",
 		Run: func(cmd *cobra.Command, args []string) {
 			rmListRepos(rmIdx)
 		},
@@ -73,7 +66,7 @@ func init() {
 	rmCommand.AddCommand(&cobra.Command{
 		Use:     "ls",
 		Aliases: []string{"l"},
-		Short:   "lists all components in a repo",
+		Short:   "(beta) lists all components in a repo",
 		Run: func(cmd *cobra.Command, args []string) {
 			rmListRepoComponents(rmIdx, args)
 		},
@@ -86,7 +79,7 @@ func init() {
 			c := &cobra.Command{
 				Use:     "up",
 				Aliases: []string{"u"},
-				Short:   "upload component",
+				Short:   "(beta) upload component",
 				Run: func(cmd *cobra.Command, args []string) {
 					rmUploadComponent(rmIdx, repo, coord, file)
 				},
@@ -104,7 +97,7 @@ func init() {
 		func() *cobra.Command {
 			c := &cobra.Command{
 				Use:   "ro",
-				Short: "read-only mode functions",
+				Short: "(beta) read-only mode functions",
 				Run: func(cmd *cobra.Command, args []string) {
 					rmReadOnlyToggle(rmIdx)
 					rmStatus(rmIdx)
@@ -147,7 +140,7 @@ func init() {
 
 	rmCommand.AddCommand(&cobra.Command{
 		Use:   "zip",
-		Short: "get support zip",
+		Short: "(beta) get support zip",
 		Run: func(cmd *cobra.Command, args []string) {
 			rmZip(rmIdx)
 		},
