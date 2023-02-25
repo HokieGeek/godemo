@@ -7,6 +7,6 @@ require (
 	github.com/sonatype-nexus-community/gonexus v0.54.0
 	github.com/sonatype-nexus-community/nexus-cli v0.4.0
 	github.com/spf13/cobra v0.0.5
-	golang.org/x/sys v0.0.0-20191126131656-8a8471f7e56d // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
